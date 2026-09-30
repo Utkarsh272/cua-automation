@@ -1,0 +1,73 @@
+# Sub-capability: sign on to CU Core with the tenant's service account.
+# Hand-written on purpose: login is shared by every capability and is reviewed once.
+schema_version: 1
+id: login
+version: 1.0.0
+content_hash: sha256:1b8068d9f333fdf54178e4452a9b562b7709809fbf454390b615f7be0aa6e997
+status: approved
+recorded_by: utkarsh.mittal
+approved_by: utkarsh.mittal
+provenance:
+  origin: hand_written
+  notes: Shared sign-on flow; credentials are only ever secret references.
+app:
+  product: cu-core
+  versions: ">=4.2 <5"
+
+description: Sign on to CU Core with the tenant's automation service account.
+risk: read
+inputs: {type: object, properties: {}}
+outputs: {type: object, properties: {}}
+
+steps:
+- id: open_login
+  action: navigate
+  frame: [name: main]
+  route: /login
+  postcondition: {title_contains: "Sign On"}
+
+- id: enter_user_id
+  action: fill
+  value: "{{secrets.cu_core.username}}"
+  target:
+    description: User ID text box on the sign-on form
+    frame: [name: main]
+    strategies:
+    - {by: label, text: "User ID", control: textbox}
+    - {by: attribute, attr: name, value: "ctl00$main$txtUser", tag: input}
+
+- id: enter_password
+  action: fill
+  value: "{{secrets.cu_core.password}}"
+  target:
+    description: Password box on the sign-on form
+    frame: [name: main]
+    strategies:
+    - {by: label, text: "Password", control: textbox}
+    - {by: attribute, attr: name, value: "ctl00$main$txtPwd", tag: input}
+
+- id: submit_sign_on
+  action: click
+  target:
+    description: Sign In button
+    frame: [name: main]
+    strategies:
+    - {by: role, role: button, name: "Sign In"}
+    - {by: attribute, attr: name, value: "ctl00$main$btnLogin", tag: input}
+  wait:
+    until:
+      any_of:
+      - {route: /search}
+      - {detector: bad_credentials}
+      - {detector: account_locked}
+    timeout_ms: 10000
+
+detectors:
+- id: bad_credentials
+  when: {text_visible: "Invalid user ID or password"}
+  then: {fail: LOGIN_FAILED}
+- id: account_locked
+  when: {text_visible: "User ID is locked"}
+  then: {fail: ACCOUNT_LOCKED}
+
+success: {route: /search}

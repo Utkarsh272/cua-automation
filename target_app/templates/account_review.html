@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% set page_title = "Review New Account" %}
+{% block content %}
+<p class="sub">Member {{ member.member_id }} &middot; {{ member.full_name }}</p>
+<table class="info" cellpadding="4" cellspacing="0">
+  <tr><td class="sect" colspan="2">Please review before confirming</td></tr>
+  <tr><td class="lbl">Account Type:</td><td>{{ kind_label(pending.kind) }}</td></tr>
+  <tr><td class="lbl">Nickname:</td><td>{{ pending.nickname or "(none)" }}</td></tr>
+  <tr><td class="lbl">Initial Deposit:</td><td>{{ money(pending.deposit) }}</td></tr>
+  <tr><td class="lbl">Funding Source:</td><td>{{ pending.funding_account }}</td></tr>
+</table>
+<p class="warnline">Confirming will open the account and transfer the initial deposit. This cannot be undone.</p>
+<form method="post" action="/member/{{ member.member_id }}/accounts/confirm">
+  <input type="submit" value="Confirm" name="ctl00$main$btnConfirm">
+  <a href="/member/{{ member.member_id }}/accounts/new">Back</a>
+</form>
+{% endblock %}

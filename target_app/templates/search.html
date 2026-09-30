@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% set page_title = "Member Search" %}
+{% block content %}
+<form method="post" action="/search">
+<table class="form" cellpadding="4" cellspacing="0">
+  <tr><td class="sect" colspan="2">Find Member</td></tr>
+  <tr>
+    <td class="lbl">{{ tenant.member_id_label }}:</td>
+    <td><input type="text" name="ctl00$main$txtMid" id="{{ gid('txtMid') }}" size="12" maxlength="10" value="{{ mid }}"></td>
+  </tr>
+  {% if tenant.require_privacy_ack %}
+  <tr>
+    <td class="lbl"></td>
+    <td><input type="checkbox" name="ctl00$main$chkAck" id="{{ gid('chkAck') }}" value="1">
+      <font size="2">I acknowledge the member privacy notice</font></td>
+  </tr>
+  {% endif %}
+  <tr>
+    <td></td>
+    <td>
+      <input type="submit" value="Search" name="ctl00$main$btnSearch">
+      <input type="reset" value="Clear">
+    </td>
+  </tr>
+</table>
+</form>
+{% endblock %}

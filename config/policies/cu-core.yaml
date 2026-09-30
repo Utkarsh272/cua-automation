@@ -1,0 +1,42 @@
+# Policy for CU Core. Deny by default: anything not listed here is refused.
+# Checked on every action in discovery and replay, and on the URL after every navigation.
+app: cu-core
+
+allowed_origins:
+  - http://localhost:8080   # tenant A
+  - http://localhost:8081   # tenant B
+  - http://127.0.0.1:8080
+  - http://127.0.0.1:8081
+
+allowed_routes:
+  - /
+  - /frame/*
+  - /static/*
+  - /login
+  - /logout
+  - /search
+  - /search/quick
+  - /notice/ack
+  - /member/:member_id
+  - /member/:member_id/accounts/new
+  - /member/:member_id/accounts/review
+  - /member/:member_id/accounts/confirm
+  - /member/:member_id/accounts/done
+  # Deliberately absent: /admin/*, /loans, /reports, /__test/*
+
+allowed_actions: [navigate, click, fill, select, check, press, extract]
+blocked_actions: [file_upload, download, new_window, evaluate_script]
+
+# Heuristics can only raise risk above what an artifact declares, never lower it.
+risk_rules:
+  - when: { control_name_matches: "\\b(confirm|submit|transfer|delete|close account|open account|approve|disburse)\\b" }
+    risk: irreversible
+  - when: { route_matches: "/accounts/confirm$" }
+    risk: irreversible
+  - when: { control_name_matches: "\\b(continue|save|update)\\b" }
+    risk: reversible_write
+
+risk_handling:
+  read: allow
+  reversible_write: allow_with_write_scope
+  irreversible: require_confirmation   # otherwise escalate to a human

@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% set page_title = "Access Denied" %}
+{% block content %}
+<div class="msg error">
+  Access Denied. Your user profile ({{ user | upper }}) is not authorized to view restricted
+  member records. Ref: SEC-403
+</div>
+<p class="actions"><a href="/search">Return to Member Search</a></p>
+{% endblock %}

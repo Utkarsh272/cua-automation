@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% set page_title = "Sign On" %}
+{% block content %}
+<form method="post" action="/login">
+<table class="form" cellpadding="4" cellspacing="0">
+  <tr><td class="sect" colspan="2">Enter your credentials</td></tr>
+  <tr>
+    <td class="lbl">User ID:</td>
+    <td><input type="text" name="ctl00$main$txtUser" id="{{ gid('txtUser') }}" size="20" autocomplete="off"></td>
+  </tr>
+  <tr>
+    <td class="lbl">Password:</td>
+    <td><input type="password" name="ctl00$main$txtPwd" id="{{ gid('txtPwd') }}" size="20" autocomplete="off"></td>
+  </tr>
+  <tr>
+    <td></td>
+    <td><input type="submit" value="Sign In" name="ctl00$main$btnLogin"></td>
+  </tr>
+</table>
+</form>
+<p class="fine">Authorized use only. Activity on this system is monitored and logged.</p>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% set page_title = "Open Sub-Account" %}
+{% block content %}
+<p class="sub">Member {{ member.member_id }} &middot; {{ member.full_name }}</p>
+<form method="post" action="/member/{{ member.member_id }}/accounts/new">
+<table class="form" cellpadding="4" cellspacing="0">
+  <tr><td class="sect" colspan="3">New Account Details</td></tr>
+  <tr>
+    <td class="lbl">Account Type:</td>
+    <td>
+      <select name="ctl00$main$ddlType" id="{{ gid('ddlType') }}">
+        <option value="">-- Select --</option>
+        {% for k in kinds %}
+        <option value="{{ k }}" {% if values.kind == k %}selected{% endif %}>{{ kind_label(k) }}</option>
+        {% endfor %}
+      </select>
+    </td>
+    <td>{% if errors.kind %}<span class="err">{{ errors.kind }}</span>{% endif %}</td>
+  </tr>
+  <tr>
+    <td class="lbl">Nickname:</td>
+    <td><input type="text" name="ctl00$main$txtNick" id="{{ gid('txtNick') }}" size="22" value="{{ values.nickname or '' }}"></td>
+    <td>{% if errors.nickname %}<span class="err">{{ errors.nickname }}</span>{% endif %}</td>
+  </tr>
+  <tr>
+    <td class="lbl">Initial Deposit:</td>
+    <td><input type="text" name="ctl00$main$txtDeposit" id="{{ gid('txtDeposit') }}" size="12" value="{{ values.deposit or '' }}"></td>
+    <td>{% if errors.deposit %}<span class="err">{{ errors.deposit }}</span>{% endif %}</td>
+  </tr>
+  <tr>
+    <td class="lbl">Funding Source:</td>
+    <td>
+      <select name="ctl00$main$ddlFunding" id="{{ gid('ddlFunding') }}">
+        <option value="">-- Select --</option>
+        {% for a in funding %}
+        <option value="{{ a.number }}" {% if values.funding == a.number %}selected{% endif %}>{{ kind_label(a.kind) }} - {{ a.number }} ({{ money(a.balance) }})</option>
+        {% endfor %}
+      </select>
+    </td>
+    <td>{% if errors.funding %}<span class="err">{{ errors.funding }}</span>{% endif %}</td>
+  </tr>
+  <tr>
+    <td></td>
+    <td colspan="2">
+      <input type="submit" value="Continue" name="ctl00$main$btnContinue">
+      <a href="/member/{{ member.member_id }}">Cancel</a>
+    </td>
+  </tr>
+</table>
+</form>
+{% endblock %}

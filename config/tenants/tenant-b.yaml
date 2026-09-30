@@ -1,0 +1,11 @@
+id: tenant-b
+institution: Riverbend Community Credit Union
+product: cu-core
+product_version: 4.7.0
+base_url_env: CU_CORE_TENANT_B_URL
+default_base_url: http://localhost:8081
+secrets_prefix: cu_core
+policy: config/policies/cu-core.yaml
+
+members_by_principal:
+  member:maria.delgado: ["10042"]

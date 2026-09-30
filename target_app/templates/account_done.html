@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% set page_title = "Account Opened" %}
+{% block content %}
+{% if account %}
+<div class="msg ok">The account was opened successfully.</div>
+<table class="info" cellpadding="4" cellspacing="0">
+  <tr><td class="lbl">New Account Number:</td><td>{{ account.number }}</td></tr>
+  <tr><td class="lbl">Account Type:</td><td>{{ kind_label(account.kind) }}</td></tr>
+  <tr><td class="lbl">Opening Balance:</td><td>{{ money(account.balance) }}</td></tr>
+</table>
+{% else %}
+<div class="msg warn">Account reference not found.</div>
+{% endif %}
+<p class="actions"><a href="/member/{{ member.member_id }}">Return to Member</a></p>
+{% endblock %}

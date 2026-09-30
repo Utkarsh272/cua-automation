@@ -1,0 +1,43 @@
+# Shared by every tenant running the CU Core product.
+product: cu-core
+description: CU Core Member Services, a core banking back office used by credit unions.
+
+# Sub-capability every CU Core capability uses to sign on.
+login: login@^1
+
+# Checked before and after every step of every CU Core capability, in addition to the
+# capability's own detectors.
+detectors:
+  - id: session_expired
+    when:
+      all_of:
+        - { title_contains: "Sign On" }
+        - { text_visible: "Your session has expired" }
+    then: { recover: relogin, max: 1 }
+
+  - id: app_error
+    when: { text_visible: "Server Error in '/CUCore' Application" }
+    then: { fail: APP_ERROR }
+
+  - id: maintenance
+    when: { title_contains: "System Unavailable" }
+    then: { fail: APP_UNAVAILABLE }
+
+  - id: module_not_licensed
+    when: { title_contains: "Module Not Available" }
+    then: { fail: UNEXPECTED_STATE }
+
+  - id: security_update_prompt
+    when: { dialog_title: "Security Update Required" }
+    then: { escalate: "Security update prompt must be handled by a person." }
+
+# Used when onboarding a tenant: a label that does not resolve is retried with its synonyms
+# to propose an override for review. Never applied silently at replay.
+label_synonyms:
+  Member ID: ["Member #", "Member Number", "Account Holder ID"]
+  Savings: ["Share Savings", "Regular Share", "Primary Share"]
+  Checking: ["Share Draft", "Share Draft Checking"]
+
+# App-specific redaction, on top of the default SSN/card/email/phone patterns.
+redaction_patterns:
+  account_number: "\\b\\d{4}-\\d{3}-\\d{4}\\b"

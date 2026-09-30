@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% set page_title = "Member Detail" %}
+{% block content %}
+<table class="info" cellpadding="3" cellspacing="0">
+  <tr><td class="sect" colspan="4">Member Information</td></tr>
+  <tr>
+    <td class="lbl">Member ID:</td><td>{{ member.member_id }}</td>
+    <td class="lbl">Date of Birth:</td><td>{{ member.dob }}</td>
+  </tr>
+  <tr>
+    <td class="lbl">Name:</td><td>{{ member.full_name }}</td>
+    <td class="lbl">Phone:</td><td>{{ member.phone }}</td>
+  </tr>
+  <tr>
+    <td class="lbl">Tax ID:</td><td>***-**-{{ member.tax_id_last4 }}</td>
+    <td class="lbl">Email:</td><td>{{ member.email }}</td>
+  </tr>
+</table>
+
+<table class="grid" cellpadding="3" cellspacing="0">
+  <tr><td class="sect" colspan="5">Accounts</td></tr>
+  <tr class="hdr">
+    <td>Account</td><td>Nickname</td><td>Number</td><td>Status</td><td align="right">Balance</td>
+  </tr>
+  {% for a in member.accounts %}
+  <tr class="{{ loop.cycle('odd', 'even') }}">
+    <td>{{ kind_label(a.kind) }}</td>
+    <td>{{ a.nickname }}</td>
+    <td>{{ a.number }}</td>
+    <td>{{ a.status }}</td>
+    <td align="right" class="{{ 'neg' if a.balance < 0 else '' }}">{{ money(a.balance) }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<table class="info" cellpadding="3" cellspacing="0">
+  <tr><td class="sect">Notes</td></tr>
+  <tr><td class="notes">{{ member.notes or "(none)" }}</td></tr>
+</table>
+
+<p class="actions">
+  <a href="/member/{{ member.member_id }}/accounts/new">Open Sub-Account</a> &nbsp;|&nbsp;
+  <a href="/search">New Search</a>
+</p>
+{% endblock %}

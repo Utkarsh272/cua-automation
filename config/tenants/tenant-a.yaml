@@ -1,0 +1,13 @@
+id: tenant-a
+institution: Harbor Federal Credit Union
+product: cu-core
+product_version: 4.6.2
+base_url_env: CU_CORE_TENANT_A_URL
+default_base_url: http://localhost:8080
+secrets_prefix: cu_core          # resolves {{secrets.cu_core.username}} from CU_CORE_USERNAME
+policy: config/policies/cu-core.yaml
+
+# Demo subject-binding table: which members each end-user principal may act for.
+members_by_principal:
+  member:maria.delgado: ["10042"]
+  member:james.okafor: ["10077"]
