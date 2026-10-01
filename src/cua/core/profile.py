@@ -20,6 +20,7 @@ from ruamel.yaml import YAML
 
 from .artifact import Detector
 from .semver import parse_requirement, parse_version
+from .targets import FrameRef
 
 
 class _Strict(BaseModel):
@@ -30,6 +31,11 @@ class AppProfile(_Strict):
     product: str = Field(pattern=r"^[a-z][a-z0-9-]*$")
     description: str
     login: str
+    content_frame: tuple[FrameRef, ...] = Field(
+        default=(),
+        description="Frame whose URL and title define 'the page' for routes and titles "
+        "(framesets). Empty means the top-level document.",
+    )
     detectors: tuple[Detector, ...] = ()
     label_synonyms: dict[str, tuple[str, ...]] = Field(default_factory=dict)
     redaction_patterns: dict[str, str] = Field(default_factory=dict)

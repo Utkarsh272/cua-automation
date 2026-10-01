@@ -164,7 +164,8 @@ overrides:
           description: Privacy acknowledgement checkbox under the member number
           frame: [{ name: main }]
           strategies:
-            - { by: text, text: "I acknowledge the member privacy notice", exact: true }
+            # The text sits after the checkbox in the same cell, with no <label>.
+            - { by: label, text: "I acknowledge the member privacy notice", control: checkbox }
             - { by: attribute, attr: name, value: "ctl00$main$chkAck", tag: input }
     - op: set
       path: steps.read_savings_balance.target.strategies[0].row_match

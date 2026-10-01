@@ -21,9 +21,33 @@ from one codebase.
 
 ## 2. Architecture
 
-_To be completed (Day 3 to 7)._ Draft: one process, seven components, one hard seam (the `Surface`
-interface). The LLM is used only by the discovery agent; production traffic only touches the replay
-engine. Everything under `src/cua/core/` is free of browser and LLM imports.
+_Draft; completed on Day 7._ One process, seven components, one hard seam (the `Surface`
+protocol, `src/cua/surface/base.py`). The LLM is used only by the discovery agent; production
+traffic only touches the replay engine. Everything under `src/cua/core/` is free of browser and
+LLM imports.
+
+**Web surface (Day 3).** Playwright/Chromium plus a small in-page library (`dom.js`) that runs in
+every frame.
+
+- *Perception.* An observation lists visible controls and readable data cells with refs (`e12`),
+  the label a person would read (including the legacy "label in the neighbouring cell"), column
+  headers and row context, dialogs, and the page text. Values of password fields are never shown.
+- *Locating.* Role + name via Playwright's accessibility engine; label, table-cell, text and
+  attribute strategies in `dom.js`. A strategy wins only on exactly one visible match; the index of
+  the winner is reported so a fallback win is flagged `degraded`.
+- *From agent action to durable locator.* `suggest_target(ref)` proposes strategies for an element
+  the agent used and keeps only those that resolve uniquely to that same element, most robust
+  first. Generated ids are never proposed.
+- *Guard in the browser.* Every document request, including frame navigations, is checked against
+  the policy allowlist before it leaves the browser and aborted if not allowed. This sits under
+  the policy guard as defence in depth.
+- *Evidence.* Screenshots black out known sensitive values and anything matching the same patterns
+  the log redactor uses, so screenshots and logs agree.
+
+Observed on the real app: CU Core's text boxes have no accessible name, so role + name can never
+match them; the label strategy is primary there. On tenant B the relabeled field is still found
+through the stable `name` attribute (same vendor product), flagged `degraded`; the extra
+compliance checkbox is what actually requires the tenant override.
 
 ## 3. Artifact schema
 

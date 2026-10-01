@@ -30,3 +30,16 @@ One line per decision, with the reason. This becomes REPORT.md and interview not
 | 2026-09-30 | Identifiers are redacted to a stable hash tag, not blanked | Runs stay correlatable in logs without exposing the member ID |
 | 2026-09-30 | Unknown fields default to sensitive in the redactor | Fail closed |
 | 2026-09-30 | Guard test caught the synthetic password printed in README on its first run | Kept the test; docs now point to `.env.example` |
+| 2026-09-30 | Web surface = Playwright for role+name, injected `dom.js` for everything else | The accessibility tree cannot see labels that live in a neighbouring `<td>` |
+| 2026-09-30 | Resolution returns which strategy won; index > 0 = `degraded` | Drift becomes visible on every run, before it breaks anything |
+| 2026-09-30 | Ambiguity is its own failure (`TARGET_AMBIGUOUS`), separate from not found | "Two Search buttons" and "no Search button" need different fixes |
+| 2026-09-30 | `near_text` picks the candidate with the closest ancestor containing the text | Deterministic tie-break that reads like a person would describe it |
+| 2026-09-30 | `suggest_target` only keeps strategies verified to hit the same element now | The compiler never writes a locator that was not proven on the recorded page |
+| 2026-09-30 | Browser-level navigation guard via request routing, including frames | Defence in depth: an injected link to `/admin/transfer` is aborted before it leaves the browser |
+| 2026-09-30 | Native `confirm()` dialogs are dismissed and recorded, never accepted | Cancel is the safe default; the record lets detectors escalate |
+| 2026-09-30 | `content_frame` in the app profile defines "the page" for route/title | In a frameset the top document's title never changes |
+| 2026-09-30 | Screenshots mask known values **and** the log redactor's patterns | Review found screenshots showing emails and account numbers that logs had masked |
+| 2026-09-30 | Layout-derived labels apply to fields, not buttons | Review found the quick-find Search button inheriting the text box's label |
+| 2026-09-30 | Currency parser rejects spaces inside digits ("1 204") | A parser that guesses returns a wrong number instead of `OUTPUT_INVALID` |
+| 2026-09-30 | Tenant B: relabel absorbed by the `name` fallback (degraded); the checkbox needs the override | Found by the first real-browser run; kept as a test and as REPORT material |
+| 2026-09-30 | Known limit: amounts outside the capability contract are not masked in screenshots | No pattern separates "a sensitive amount" from "any dollar figure"; synthetic data in discovery |

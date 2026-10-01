@@ -14,8 +14,8 @@ running decision log is in `DECISIONS.md`.
 | Day 0: repo, tooling, CI | Done |
 | Day 1: CU Core target app (legacy frameset, fault injection, tenant B) | Done |
 | Day 2: `core/` artifact schema, result contract, conditions, policy, authz, redaction | Done |
-| Day 3: web surface adapter (Playwright) | Next |
-| Day 4: discovery agent and the real LLM run | Planned |
+| Day 3: web surface adapter (Playwright): locators, observation, guard, redacted evidence | Done |
+| Day 4: discovery agent and the real LLM run | Next |
 | Day 5: compiler, registry, approval | Planned |
 | Day 6: replay engine | Planned |
 | Day 7: control lease and human handoff | Planned |
@@ -54,7 +54,8 @@ uv run cua schema --out schemas/capability.schema.json               # regenerat
 ## Tests
 
 ```bash
-uv run pytest            # unit + target app tests, no API key needed
+uv run pytest            # unit, target-app and real-browser tests; no API key needed
+uv run pytest tests/surface   # just the Playwright tests against CU Core (tenants a and b)
 uv run ruff check .
 uv run mypy
 ```
@@ -65,7 +66,9 @@ uv run mypy
 config/          policies, app profile, tenants
 capabilities/    versioned capability artifacts (YAML)
 schemas/         generated JSON Schema for the artifact format
-src/cua/core/    pure logic: schema, results, conditions, policy, authz, redaction (no browser, no LLM)
+src/cua/core/    pure logic: schema, results, conditions, policy, authz, redaction, parsing (no browser, no LLM)
+src/cua/surface/ the Surface protocol and the Playwright web adapter (dom.js runs in each frame)
+src/cua/evidence/ run evidence store; every write goes through the redactor
 target_app/      CU Core, the legacy target
 tests/           unit tests and target app tests
 evidence/        curated run logs and screenshots (from Day 4)

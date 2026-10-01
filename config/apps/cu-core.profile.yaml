@@ -5,6 +5,10 @@ description: CU Core Member Services, a core banking back office used by credit 
 # Sub-capability every CU Core capability uses to sign on.
 login: login@^1
 
+# CU Core is a frameset; all work happens in the "main" frame, so its URL and title are
+# what route/title conditions refer to.
+content_frame: [{ name: main }]
+
 # Checked before and after every step of every CU Core capability, in addition to the
 # capability's own detectors.
 detectors:

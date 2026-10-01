@@ -128,6 +128,14 @@ class Redactor:
         r.add_secrets(secrets)
         return r
 
+    def pattern_sources(self) -> tuple[str, ...]:
+        """Regex sources of the active patterns, so screenshots mask what logs mask."""
+        return tuple(p.regex.pattern for p in self.patterns)
+
+    def sensitive_strings(self) -> tuple[str, ...]:
+        """Display forms of every sensitive value, for masking screenshots. Never log these."""
+        return tuple(sorted(self._known, key=len, reverse=True))
+
     # --- applying ---------------------------------------------------------------------------
 
     def redact_text(self, text: str) -> str:
