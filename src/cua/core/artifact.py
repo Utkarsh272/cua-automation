@@ -511,18 +511,21 @@ def dump_capability(cap: Capability) -> str:
     return buf.getvalue()
 
 
-def validate_inputs(cap: Capability, inputs: dict[str, Any]) -> list[str]:
-    """JSON Schema errors for these inputs, as readable strings. Empty means valid."""
-    validator = jsonschema.Draft202012Validator(cap.inputs.json_schema(include_extensions=False))
+def validate_against(schema: ObjectSchema, data: dict[str, Any]) -> list[str]:
+    """JSON Schema errors for ``data``, as readable strings. Empty means valid."""
+    validator = jsonschema.Draft202012Validator(schema.json_schema(include_extensions=False))
     return [
         f"{'.'.join(str(p) for p in e.absolute_path) or '(root)'}: {e.message}"
-        for e in sorted(validator.iter_errors(inputs), key=lambda e: list(e.absolute_path))
+        for e in sorted(validator.iter_errors(data), key=lambda e: list(e.absolute_path))
     ]
 
 
+def validate_inputs(cap: Capability, inputs: dict[str, Any]) -> list[str]:
+    return validate_against(cap.inputs, inputs)
+
+
 def validate_outputs(cap: Capability, outputs: dict[str, Any]) -> list[str]:
-    validator = jsonschema.Draft202012Validator(cap.outputs.json_schema(include_extensions=False))
-    return [e.message for e in validator.iter_errors(outputs)]
+    return validate_against(cap.outputs, outputs)
 
 
 def to_tool_definition(cap: Capability) -> dict[str, Any]:

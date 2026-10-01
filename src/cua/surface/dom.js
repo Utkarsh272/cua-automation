@@ -58,7 +58,10 @@
     const cell = el.closest("td, th");
     // Layout-based labels apply to fields only; a button's name is its own text.
     if (cell && FIELD_KINDS.includes(kindOf(el)) && fieldsIn(cell).length === 1) {
-      const own = text(cell);
+      // The cell's own text, without the controls in it (a <select>'s options are not a label).
+      const clone = cell.cloneNode(true);
+      clone.querySelectorAll("select, textarea, input, button, option").forEach((n) => n.remove());
+      const own = clean(clone.textContent);
       if (own) {
         out.push(own);
       } else {
@@ -269,6 +272,7 @@
       options,
       row: rowTexts(el),
       column,
+      context: kind === "cell" ? "" : suggestContext(el).nearTitle,
       disabled: !!el.disabled,
       sensitive: el.tagName === "INPUT" && (el.type || "").toLowerCase() === "password",
       attrs: {

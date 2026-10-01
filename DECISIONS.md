@@ -43,3 +43,21 @@ One line per decision, with the reason. This becomes REPORT.md and interview not
 | 2026-09-30 | Currency parser rejects spaces inside digits ("1 204") | A parser that guesses returns a wrong number instead of `OUTPUT_INVALID` |
 | 2026-09-30 | Tenant B: relabel absorbed by the `name` fallback (degraded); the checkbox needs the override | Found by the first real-browser run; kept as a test and as REPORT material |
 | 2026-09-30 | Known limit: amounts outside the capability contract are not masked in screenshots | No pattern separates "a sensitive amount" from "any dollar figure"; synthetic data in discovery |
+| 2026-10-01 | Provider-agnostic discovery: one OpenAI-compatible client + a native Claude client | Free tiers (Groq, Gemini, OpenRouter, Cerebras) and local Ollama all speak that API; the brief only requires a real run |
+| 2026-10-01 | Default provider Groq (`openai/gpt-oss-120b`, low reasoning effort) | Free, fast, OpenAI-compatible tool calling; client waits out 429s using reset headers |
+| 2026-10-01 | Per-provider model env vars (`GROQ_MODEL`), not one `DISCOVERY_MODEL` | A Claude model name in `.env` must never be sent to Groq |
+| 2026-10-01 | A person writes the discovery spec (goal + typed contract + risk ceiling); the model finds steps | The capability interface is never invented by a model |
+| 2026-10-01 | Prompt rebuilt each turn from the action log, not a growing transcript | Small calls fit free-tier token limits; each call is reproducible from evidence |
+| 2026-10-01 | Whole prompt redacted at one choke point before it leaves the process | First test run found the member ID leaking through the action log, not the observation |
+| 2026-10-01 | Model sees placeholders only; values rendered in-process | It cannot leak or mistype what it never sees |
+| 2026-10-01 | Discovery success requires re-reading each output through its proposed locator | Guarantees the compiled capability can replay what discovery found |
+| 2026-10-01 | `declare_outcome` must quote text actually on the page | Stops a model from inventing business outcomes; the quote becomes the detector |
+| 2026-10-01 | Irreversible actions always escalate during discovery | No confirmation token is ever issued to the agent |
+| 2026-10-01 | Shared StepRunner for login now and replay on Day 6 | One implementation of "run a step and wait for its condition" |
+| 2026-10-01 | Redaction finalized at end of run (re-redact files, mask held screenshots) | Output values are only known after extraction, but earlier turns already showed them |
+| 2026-10-01 | Evidence file names carry no page data | A screenshot named after the route leaked a member ID |
+| 2026-10-01 | Credential key matching uses whole names (`access_token`), not substrings | `input_tokens` was being masked, hiding proof of a real model run |
+| 2026-10-01 | Same-cell labels exclude the cell's own controls | A dropdown's options were being read as its label |
+| 2026-10-01 | Controls carry their form/table title (`in='Find Member'`) in observations | Lets a model tell two "Search" buttons apart without guessing from order |
+| 2026-10-01 | Redacted dropdown options are mapped back only when exactly one option matches | The model sees `Checking - [REDACTED:account_number]` but must still be able to choose it |
+| 2026-10-01 | Known limit: the model sees non-input values on screen (names, balances) | Needed to navigate; synthetic data here; production needs a zero-retention model agreement |

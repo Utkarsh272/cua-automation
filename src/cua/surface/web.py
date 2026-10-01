@@ -221,6 +221,11 @@ class WebSurface:
         except LookupError:
             return self.page.main_frame
 
+    @property
+    def content_url(self) -> str:
+        """URL of the frame that is "the page" (the content frame in a frameset)."""
+        return self._content().url
+
     def _lib(self, frame: Frame) -> Frame:
         if not frame.evaluate("() => !!window.__cua"):
             frame.evaluate(DOM_JS)
@@ -363,6 +368,9 @@ class WebSurface:
             raise
         self.settle()
 
+    def pause(self, ms: int) -> None:
+        self.page.wait_for_timeout(ms)
+
     def settle(self, timeout_ms: int = 5000) -> None:
         """Wait until no document is loading and navigation has been quiet for 150 ms.
 
@@ -454,6 +462,7 @@ class WebSurface:
                         options=tuple(info["options"]),
                         row=tuple(info["row"]),
                         column=info["column"],
+                        context=info["context"],
                         disabled=info["disabled"],
                         sensitive=info["sensitive"],
                         bbox=_rect(h.bounding_box()),
@@ -517,7 +526,9 @@ class WebSurface:
         attr_name = info["attrs"]["name"]
         if _stable(attr_name):
             proposals.append(AttributeStrategy(attr="name", value=attr_name, tag=info["tag"]))
-        if role in ("cell", "link") and ctx["text"] and len(ctx["text"]) <= 60:
+        # Text locators only for links: a data cell's text is the data itself ("Maria Delgado")
+        # and changes with every input, so it can never be a durable locator.
+        if role == "link" and ctx["text"] and len(ctx["text"]) <= 60:
             proposals.append(TextStrategy(text=ctx["text"]))
 
         verified: list[Strategy] = []
@@ -547,16 +558,15 @@ class WebSurface:
 
     # --- evidence ---------------------------------------------------------------------------
 
-    def screenshot(
+    def screenshot_png(
         self,
-        path: str,
         *,
         redact_values: tuple[str, ...] = (),
         redact_patterns: tuple[str, ...] = (),
         mask: tuple[TargetSpec, ...] = (),
-    ) -> str:
-        """Viewport screenshot with sensitive regions blacked out before it touches disk."""
-        from PIL import Image, ImageDraw
+    ) -> bytes:
+        """Viewport PNG with sensitive regions already blacked out (nothing raw leaves here)."""
+        from PIL import Image
 
         boxes: list[tuple[int, int, int, int]] = []
         for f in self.page.frames:
@@ -578,13 +588,35 @@ class WebSurface:
             r = _rect(res.handle[1].bounding_box())
             if r:
                 boxes.append(r)
-        Path(path).parent.mkdir(parents=True, exist_ok=True)
         img = Image.open(io.BytesIO(self.page.screenshot())).convert("RGB")
-        draw = ImageDraw.Draw(img)
-        for x, y, bw, bh in boxes:
-            draw.rectangle([x - 2, y - 2, x + bw + 2, y + bh + 2], fill=(0, 0, 0))
-        img.save(path)
+        black_out(img, boxes)
+        out = io.BytesIO()
+        img.save(out, format="PNG")
+        return out.getvalue()
+
+    def screenshot(
+        self,
+        path: str,
+        *,
+        redact_values: tuple[str, ...] = (),
+        redact_patterns: tuple[str, ...] = (),
+        mask: tuple[TargetSpec, ...] = (),
+    ) -> str:
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        Path(path).write_bytes(
+            self.screenshot_png(
+                redact_values=redact_values, redact_patterns=redact_patterns, mask=mask
+            )
+        )
         return path
+
+
+def black_out(img: Any, boxes: list[tuple[int, int, int, int]]) -> None:
+    from PIL import ImageDraw
+
+    draw = ImageDraw.Draw(img)
+    for x, y, bw, bh in boxes:
+        draw.rectangle([x - 2, y - 2, x + bw + 2, y + bh + 2], fill=(0, 0, 0))
 
 
 @contextmanager

@@ -26,8 +26,11 @@ from decimal import Decimal, InvalidOperation
 from functools import partial
 from typing import Any
 
+# Whole credential-like key names (``password``, ``access_token``, ``Set-Cookie``), not words that
+# merely contain them: ``input_tokens`` is a usage counter and must stay readable.
 SENSITIVE_KEY = re.compile(
-    r"(?i)(pass(word|wd)?|pwd|secret|token|api[_-]?key|authorization|cookie|session[_-]?id)"
+    r"(?i)(^|[_-])(pass(word|wd)?|pwd|secret|token|api[_-]?key|authorization|cookie|"
+    r"session[_-]?id)$"
 )
 
 # Sensitivity labels that are masked. "public" is never masked.

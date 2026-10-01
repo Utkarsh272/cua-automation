@@ -457,3 +457,16 @@ def test_native_dialogs_are_recorded_and_not_blindly_confirmed(
     main.evaluate("() => { window.__answer = confirm('Delete everything?'); }")
     assert main.evaluate("() => window.__answer") is False
     assert "Delete everything?" in s.page_state().dialog_titles
+
+
+def test_dropdown_label_excludes_its_own_options(
+    open_surface: SurfaceFactory, login_cap: Capability
+) -> None:
+    s = signed_in(open_surface, login_cap)
+    s.navigate("/member/10042/accounts/new", MAIN)
+    boxes = {e.label: e for e in s.observe().elements if e.role == "combobox"}
+    assert set(boxes) == {"Account Type", "Funding Source"}
+    assert boxes["Account Type"].context == "New Account Details"
+    res = s.resolve(target({"by": "label", "text": "Account Type", "control": "combobox"}))
+    s.act(res, "select", "Savings")
+    assert s.read(res) == "Savings"

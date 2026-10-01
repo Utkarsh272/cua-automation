@@ -1,4 +1,4 @@
-"""``cua`` command line. Day 2 covers artifact tooling; discover/replay arrive in later days."""
+"""``cua`` command line: artifact tooling, provider check, discovery. Replay arrives on Day 6."""
 
 from __future__ import annotations
 
@@ -92,6 +92,135 @@ def schema(
         typer.echo(f"wrote {out}")
     else:
         typer.echo(text)
+
+
+@app.command("llm-check")
+def llm_check(
+    provider: str = typer.Option(
+        "groq", help="groq | gemini | openrouter | cerebras | ollama | anthropic"
+    ),
+    model: str | None = typer.Option(None, help="Override the provider's default model."),
+) -> None:
+    """One tiny tool-calling request, to confirm the key, the model and tool support work."""
+    from .config import load_dotenv
+    from .llm.base import LLMError, ToolSpec
+    from .llm.providers import make_client
+
+    load_dotenv()
+    try:
+        llm = make_client(provider, model)
+        resp = llm.decide(
+            "You are a connectivity check. Always call the ping tool.",
+            "Call ping with ok=true.",
+            [
+                ToolSpec(
+                    "ping",
+                    "Confirm you can call tools.",
+                    {
+                        "type": "object",
+                        "properties": {"ok": {"type": "boolean"}},
+                        "required": ["ok"],
+                    },
+                )
+            ],
+        )
+    except LLMError as exc:
+        typer.secho(f"FAILED {provider}: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(1) from exc
+    if resp.call is None or resp.call.name != "ping":
+        typer.secho(
+            f"{provider}/{resp.model} answered without calling the tool: {resp.text[:200]!r}",
+            fg=typer.colors.YELLOW,
+        )
+        raise typer.Exit(1)
+    typer.secho(
+        f"OK {provider}/{resp.model} tool call={resp.call.args} latency={resp.latency_ms}ms "
+        f"tokens in/out={resp.input_tokens}/{resp.output_tokens} retries={resp.retries}",
+        fg=typer.colors.GREEN,
+    )
+
+
+@app.command()
+def discover(
+    goal_file: Path = typer.Argument(
+        ..., help="Discovery spec, e.g. goals/lookup_savings_balance.yaml"
+    ),
+    provider: str = typer.Option(
+        "groq", help="groq | gemini | openrouter | cerebras | ollama | anthropic"
+    ),
+    model: str | None = typer.Option(None, help="Override the provider's default model."),
+    out: Path = typer.Option(Path("runs"), help="Evidence root; the run gets its own folder."),
+    serve: bool = typer.Option(
+        True, "--serve/--no-serve", help="Start the local CU Core for the tenant."
+    ),
+    headed: bool = typer.Option(False, help="Show the browser window."),
+    vision: bool = typer.Option(False, help="Also send a (redacted) screenshot each turn."),
+    input_: list[str] = typer.Option([], "--input", help="Override an example input: name=value"),
+    fault: str | None = typer.Option(None, help="CU Core fault header, e.g. notice"),
+) -> None:
+    """Run the LLM discovery agent once against a live CU Core and save the evidence."""
+    from .config import load_dotenv, serve_target, tenant_context
+    from .core.templating import env_secrets
+    from .discovery.run import run_discovery
+    from .discovery.spec import DiscoverySpec, load_spec
+    from .llm.base import LLMError
+    from .llm.providers import make_client
+    from .surface.web import launch_browser
+
+    load_dotenv()
+    spec = load_spec(goal_file)
+    if input_:
+        overrides = dict(kv.split("=", 1) for kv in input_)
+        data = spec.model_dump(mode="json", by_alias=True)
+        data["example_inputs"] = {**spec.example_inputs, **overrides}
+        spec = DiscoverySpec.model_validate(data)
+    ctx = tenant_context(spec.tenant)
+    try:
+        llm = make_client(provider, model)
+    except LLMError as exc:
+        typer.secho(str(exc), fg=typer.colors.RED, err=True)
+        raise typer.Exit(2) from exc
+
+    server = serve_target(ctx.tenant) if serve else None
+    typer.echo(
+        f"discovering {spec.capability_id} on {ctx.tenant.base_url} with {provider}/{llm.model}"
+    )
+    try:
+        with launch_browser(headless=not headed) as browser:
+            trace, run_dir = run_discovery(
+                spec,
+                browser=browser,
+                llm=llm,
+                ctx=ctx,
+                base_url=ctx.tenant.base_url,
+                secrets=env_secrets(),
+                evidence_root=out,
+                include_screenshot=vision,
+                extra_headers={"X-Fault": fault} if fault else None,
+            )
+    finally:
+        if server is not None:
+            server.should_exit = True
+
+    color = (
+        typer.colors.GREEN
+        if trace.status in ("succeeded", "business_outcome")
+        else typer.colors.RED
+    )
+    typer.secho(f"\n{trace.status.upper()}: {trace.reason}", fg=color, bold=True)
+    for st in trace.steps:
+        el = st.element.label or st.element.name if st.element else ""
+        extra = f" -> {st.output}" if st.output else ""
+        note = f" [{st.policy.verdict}]" if st.policy and st.policy.verdict != "allow" else ""
+        err = f" ({st.error})" if st.error else ""
+        typer.echo(f"  {st.index:>2}. {st.tool:<15} {el!s:<30} {st.status}{note}{extra}{err}")
+    typer.echo(
+        f"\nmodel {trace.provider}/{trace.model}: {trace.llm_calls} calls, "
+        f"{trace.input_tokens} in / {trace.output_tokens} out tokens"
+    )
+    typer.echo(f"evidence: {run_dir}")
+    if trace.status not in ("succeeded", "business_outcome"):
+        raise typer.Exit(1)
 
 
 if __name__ == "__main__":

@@ -83,6 +83,7 @@ class ObservedElement:
     options: tuple[str, ...] = ()
     row: tuple[str, ...] = ()
     column: str = ""
+    context: str = ""  # title of the form/table the control sits in, e.g. "Find Member"
     disabled: bool = False
     sensitive: bool = False  # e.g. password fields; value never shown
     bbox: tuple[int, int, int, int] | None = None
@@ -131,6 +132,8 @@ class Observation:
                 parts.append(f"value={e.value!r}")
             if e.options:
                 parts.append(f"options={list(e.options)}")
+            if e.context:
+                parts.append(f"in={e.context!r}")
             if e.disabled:
                 parts.append("disabled")
             lines.append(" ".join(parts))
@@ -159,6 +162,10 @@ class Surface(Protocol):
     def read(self, res: Resolution) -> str: ...
 
     def settle(self, timeout_ms: int = 5000) -> None: ...
+
+    def pause(self, ms: int) -> None:
+        """Let the UI make progress without busy-waiting (used by condition polling)."""
+        ...
 
     def page_state(
         self, outputs: dict[str, Any] | None = None, fired: frozenset[str] = frozenset()

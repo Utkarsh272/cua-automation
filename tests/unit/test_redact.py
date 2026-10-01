@@ -96,3 +96,22 @@ def test_unknown_fields_default_to_sensitive() -> None:
 def test_find_sensitive_for_artifact_literals() -> None:
     assert find_sensitive("123-45-6789") == ["ssn"]
     assert find_sensitive("{{inputs.member_id}}") == []
+
+
+def test_sensitive_keys_are_whole_names_not_substrings() -> None:
+    r = Redactor()
+    out = r.redact(
+        {
+            "input_tokens": 120,
+            "output_tokens": 9,
+            "access_token": "abc",
+            "Set-Cookie": "sid=1",
+            "api_key": "k",
+            "password": "p",
+            "tokenizer": "bpe",
+        }
+    )
+    assert out["input_tokens"] == 120 and out["output_tokens"] == 9 and out["tokenizer"] == "bpe"
+    assert {out[k] for k in ("access_token", "Set-Cookie", "api_key", "password")} == {
+        "[REDACTED:secret]"
+    }

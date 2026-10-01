@@ -1,0 +1,20 @@
+{
+  "run_id": "discovery_2026-10-01T16-28-20Z_eb11",
+  "status": "succeeded",
+  "reason": "all required outputs extracted and verified",
+  "provider": "groq",
+  "model": "openai/gpt-oss-120b",
+  "steps": 5,
+  "llm_calls": 5,
+  "input_tokens": 8575,
+  "output_tokens": 318,
+  "outputs": {
+    "member_name": "[REDACTED:pii]",
+    "savings_balance": "[REDACTED:financial]"
+  },
+  "verified_outputs": {
+    "member_name": true,
+    "savings_balance": true
+  },
+  "outcome": null
+}

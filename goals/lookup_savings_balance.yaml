@@ -1,0 +1,40 @@
+# Discovery spec: the person declares the contract; the model discovers the steps.
+capability_id: lookup_savings_balance
+description: Look up a credit union member by member ID and return their name and current savings balance.
+
+goal: >
+  Find the member whose member ID is {{inputs.member_id}} and read their full name and the
+  current balance of their savings account.
+
+tenant: tenant-a
+start_route: /search          # discovery starts here, already signed on via login@^1
+risk_ceiling: read            # the agent may not perform any write while exploring
+max_steps: 15
+max_minutes: 10
+
+inputs:
+  type: object
+  required: [member_id]
+  properties:
+    member_id:
+      type: string
+      pattern: "^[0-9]{5}$"
+      description: Five-digit member ID.
+      x-sensitivity: identifier
+
+outputs:
+  type: object
+  required: [member_name, savings_balance]
+  properties:
+    member_name:
+      type: string
+      description: Member's full name as shown on the member record.
+      x-sensitivity: pii
+    savings_balance:
+      type: number
+      description: Current savings account balance in USD.
+      x-sensitivity: financial
+
+# Used only during discovery. The model never sees this value, only {{inputs.member_id}}.
+example_inputs:
+  member_id: "10042"

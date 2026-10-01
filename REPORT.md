@@ -44,6 +44,32 @@ every frame.
 - *Evidence.* Screenshots black out known sensitive values and anything matching the same patterns
   the log redactor uses, so screenshots and logs agree.
 
+**Discovery (Day 4).** A person writes a *discovery spec*: goal, typed inputs and outputs with
+sensitivity, and a risk ceiling. The model only discovers the steps; it never defines the
+capability's interface.
+
+- *Loop.* Each turn: observe, redact, ask the model for exactly one tool call, validate it,
+  check policy, act, record. The prompt is rebuilt from the agent's own action log each turn
+  rather than a growing transcript, which keeps calls small (free tiers limit tokens per minute)
+  and makes each call reproducible from the evidence.
+- *Tools.* click, fill, select, check, press, navigate, extract, declare_outcome, done,
+  escalate. Every call carries a one-sentence rationale.
+- *What the model cannot do.* See real input values (only `{{inputs.x}}` placeholders, rendered
+  inside the process); type sensitive-looking literals; act outside the policy (writes are denied
+  under a read ceiling; irreversible actions always escalate in discovery); navigate off the
+  allowlist (also blocked in the browser); declare a business outcome without quoting text that
+  is actually on the page; call `done` with outputs missing.
+- *Success is verified.* At `done`, each output is re-read through the locator the surface
+  proposed for it; if it does not match, the run fails. A run whose locators do not replay is
+  not a success.
+- *Stops.* Dead end (three actions with no change), the same action three times, three invalid
+  calls, or the step or time budget.
+- *Providers.* One OpenAI-compatible client covers Groq, Gemini, OpenRouter, Cerebras and local
+  Ollama; a native client covers Claude. Replay imports none of them.
+- *Prompt injection.* Member 10088's notes tell agents to move money. Tests drive a scripted
+  "obedient" model through it: the navigation is denied by policy, the injected link is aborted
+  in the browser, and no balance changes.
+
 Observed on the real app: CU Core's text boxes have no accessible name, so role + name can never
 match them; the label strategy is primary there. On tenant B the relabeled field is still found
 through the stable `name` attribute (same vendor product), flagged `degraded`; the extra
