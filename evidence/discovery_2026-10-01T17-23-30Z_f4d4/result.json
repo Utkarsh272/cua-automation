@@ -1,0 +1,22 @@
+{
+  "run_id": "discovery_2026-10-01T17-23-30Z_f4d4",
+  "status": "business_outcome",
+  "reason": "MEMBER_NOT_FOUND: No member found for the ID entered.",
+  "provider": "groq",
+  "model": "openai/gpt-oss-120b",
+  "steps": 3,
+  "llm_calls": 3,
+  "input_tokens": 4420,
+  "output_tokens": 219,
+  "outputs": {},
+  "verified_outputs": {},
+  "outcome": {
+    "code": "MEMBER_NOT_FOUND",
+    "detail": "The page indicates the member ID does not exist, so declare outcome.",
+    "evidence_text": "No member found for the ID entered.",
+    "page": {
+      "route": "/search",
+      "title": "CU Core - Member Search"
+    }
+  }
+}

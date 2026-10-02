@@ -1,0 +1,196 @@
+# lookup_savings_balance 1.1.0: lookup_savings_balance@1.0.1 plus overrides for tenant-b, proposed by `cua probe`.
+# Steps and locators for other tenants are unchanged. Review the overrides section, then
+# `cua approve lookup_savings_balance 1.1.0 --by <you>`.
+schema_version: 1
+id: lookup_savings_balance
+version: 1.1.0
+content_hash: sha256:5d04966af1fbb569de0a1a0602408476c5850d2df951d363cbafb3168c7c94e3
+status: approved
+recorded_by: onboarding-probe (prepared with Claude; needs a human approver)
+approved_by: utkarsh.mittal
+approved_at: '2026-10-02T14:30:20+00:00'
+provenance:
+  origin: discovery
+  recorded_from_run: discovery_2026-10-01T16-28-20Z_eb11
+  model: groq/openai/gpt-oss-120b
+  recorded_on_tenant: tenant-a
+  recorded_at: '2026-10-01T16:28:20.948426Z'
+  notes: 'Compiled from 3 discovery run(s): discovery_2026-10-01T16-28-20Z_eb11, discovery_2026-10-01T17-23-30Z_f4d4,
+    discovery_2026-10-01T17-23-48Z_cd2e. 1.0.1 is a reviewed patch of 1.0.0: access_denied quote no longer includes
+    the service-account name; NO_SAVINGS_ACCOUNT detector (Savings row absent) and System Notice recovery added
+    by hand. 1.1.0 adds tenant-b overrides proposed by the locator probe from lookup_savings_balance@1.0.1.'
+app: {product: cu-core, versions: '>=4.6 <5'}
+
+description: Look up a credit union member by member ID and return their name and current savings balance.
+risk: read
+subject: inputs.member_id
+
+inputs:
+  type: object
+  required: [member_id]
+  properties:
+    member_id:
+      type: string
+      description: Five-digit member ID.
+      x-sensitivity: identifier
+      pattern: ^[0-9]{5}$
+  additionalProperties: false
+outputs:
+  type: object
+  required: [member_name, savings_balance]
+  properties:
+    member_name:
+      type: string
+      description: Member's full name as shown on the member record.
+      x-sensitivity: pii
+    savings_balance:
+      type: number
+      description: Current savings account balance in USD.
+      x-sensitivity: financial
+  additionalProperties: false
+
+outcomes:
+- {code: MEMBER_NOT_FOUND, description: No member exists with this ID.}
+- code: ACCESS_DENIED
+  description: The service account may not view this member (restricted record).
+- {code: NO_SAVINGS_ACCOUNT, description: The member exists but has no savings account.}
+requires: [login@^1]
+
+steps:
+- id: open_search
+  action: navigate
+  description: Start at /search (already signed on)
+  frame:
+  - {name: main}
+  route: /search
+  postcondition: {title_contains: CU Core - Member Search}
+- id: enter_member_id
+  action: fill
+  target:
+    description: Member ID text box
+    frame:
+    - {name: main}
+    strategies:
+    - {by: label, text: Member ID, control: textbox}
+    - {by: attribute, attr: name, value: ctl00$main$txtMid, tag: input}
+    fingerprint:
+      tag: input
+      role: textbox
+      near_text: Member ID
+      row_context: ['Member ID:']
+      attributes: {name: ctl00$main$txtMid, type: text}
+      bbox: [325, 128, 93, 21]
+  value: '{{inputs.member_id}}'
+- id: click_search
+  action: click
+  target:
+    description: Search button
+    frame:
+    - {name: main}
+    strategies:
+    - {by: role, role: button, name: Search, near_text: Find Member}
+    - {by: attribute, attr: name, value: ctl00$main$btnSearch, tag: input}
+    fingerprint:
+      tag: input
+      role: button
+      name: Search
+      attributes: {name: ctl00$main$btnSearch, type: submit}
+      bbox: [325, 159, 58, 21]
+  wait:
+    until:
+      any_of:
+      - {title_contains: CU Core - Member Detail}
+      - {detector: member_not_found}
+      - {detector: access_denied}
+      - {detector: no_savings_account}
+    timeout_ms: 8000
+- id: read_member_name
+  action: extract
+  target:
+    description: value next to 'Name'
+    frame:
+    - {name: main}
+    strategies:
+    - {by: label, text: Name, control: value_cell}
+    fingerprint:
+      tag: td
+      role: cell
+      near_text: Name
+      row_context: ['Name:', 'Phone:']
+      bbox: [319, 148, 107, 25]
+  output: member_name
+  parse: text
+- id: read_savings_balance
+  action: extract
+  target:
+    description: Balance of the 'Savings' row in the 'Accounts' table
+    frame:
+    - {name: main}
+    strategies:
+    - {by: table_cell, table_near: Accounts, row_match: Savings, column: Balance}
+    fingerprint:
+      tag: td
+      role: cell
+      row_context: [Savings, Open]
+      bbox: [555, 282, 85, 25]
+  output: savings_balance
+  parse: currency_usd
+
+detectors:
+- id: member_not_found
+  when: {text_visible: No member found for the ID entered.}
+  then: {outcome: MEMBER_NOT_FOUND}
+- id: access_denied
+  when: {text_visible: is not authorized to view restricted member records}
+  then: {outcome: ACCESS_DENIED}
+- id: no_savings_account
+  when:
+    all_of:
+    - {title_contains: Member Detail}
+    - not:
+        element:
+          description: Savings row in the Accounts table
+          frame:
+          - {name: main}
+          strategies:
+          - {by: table_cell, table_near: Accounts, row_match: Savings, column: Account}
+  then: {outcome: NO_SAVINGS_ACCOUNT}
+- id: dismiss_system_notice
+  when: {dialog_title: System Notice}
+  then:
+    recover: click
+    target:
+      description: Acknowledge button on the System Notice
+      frame:
+      - {name: main}
+      strategies:
+      - {by: role, role: button, name: Acknowledge}
+    max: 2
+
+success:
+  all_of:
+  - {title_contains: CU Core - Member Detail}
+  - {output_present: member_name}
+  - {output_present: savings_balance}
+
+overrides:
+  tenant-b:
+  - {op: set, path: 'steps.enter_member_id.target.strategies[0].text', value: 'Member #'}
+  - op: insert_step
+    after: enter_member_id
+    step:
+      id: check_i_acknowledge_the_member_privacy_notice
+      action: check
+      target:
+        description: I acknowledge the member privacy notice checkbox
+        frame:
+        - {name: main}
+        strategies:
+        - {by: label, text: I acknowledge the member privacy notice, control: checkbox}
+        - {by: attribute, attr: name, value: ctl00$main$chkAck, tag: input}
+  - op: set
+    path: steps.read_savings_balance.target.strategies[0].row_match
+    value: Share Savings
+  - op: set
+    path: detectors.no_savings_account.when.all_of[1].not.element.strategies[0].row_match
+    value: Share Savings

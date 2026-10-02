@@ -1,0 +1,21 @@
+{
+  "run_id": "replay_2026-10-02T00-39-05Z_2eca",
+  "capability": "lookup_savings_balance",
+  "version": "1.0.1",
+  "tenant": "tenant-a",
+  "started_at": "2026-10-02T00:39:05.499120Z",
+  "duration_ms": 1654,
+  "llm_calls": 0,
+  "kind": "failure",
+  "code": "APP_ERROR",
+  "at_step": "click_search",
+  "expected": "no 'app_error'",
+  "observed": "detector app_error matched; route=/member/[identifier:32f69e84] title='Runtime Error'",
+  "retryable": false,
+  "side_effects": "none",
+  "evidence": [
+    "screenshots/01-failure.png",
+    "page_at_stop.txt"
+  ],
+  "recoveries": []
+}

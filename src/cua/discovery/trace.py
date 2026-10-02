@@ -13,7 +13,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from cua.core.artifact import ObjectSchema, RiskClass
+from cua.core.artifact import ObjectSchema, OutcomeDecl, RiskClass
 from cua.core.targets import Fingerprint, FrameRef, TargetSpec
 
 StepStatus = Literal["ok", "invalid", "denied", "escalated", "error"]
@@ -36,6 +36,8 @@ class ElementInfo(_M):
     tag: str = ""
     row: tuple[str, ...] = ()
     column: str = ""
+    context: str = ""
+    dialog: str = ""
     frame: tuple[FrameRef, ...] = ()
 
 
@@ -75,6 +77,12 @@ class TraceStep(_M):
     value: Any = None
     llm: LLMCallRecord | None = None
     t_ms: int = 0
+    # Human-in-the-loop: who performed the step ("agent" or "human:<operator>"), who approved an
+    # irreversible action, and what a person did in the window while they held the session.
+    actor: str = "agent"
+    approved_by: str | None = None
+    intervention: str | None = None
+    human_actions: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class OutcomeRecord(_M):
@@ -103,6 +111,8 @@ class DiscoveryTrace(_M):
     risk_ceiling: RiskClass
     inputs: ObjectSchema
     outputs: ObjectSchema
+    declared_outcomes: list[OutcomeDecl] = Field(default_factory=list)
+    subject: str | None = None
     start_route: str
     steps: list[TraceStep] = Field(default_factory=list)
     extracted: dict[str, Any] = Field(default_factory=dict)

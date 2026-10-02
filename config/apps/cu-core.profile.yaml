@@ -36,7 +36,7 @@ detectors:
     then: { escalate: "Security update prompt must be handled by a person." }
 
 # Used when onboarding a tenant: a label that does not resolve is retried with its synonyms
-# to propose an override for review. Never applied silently at replay.
+# to propose an override for review (`cua probe`). Never applied silently at replay.
 label_synonyms:
   Member ID: ["Member #", "Member Number", "Account Holder ID"]
   Savings: ["Share Savings", "Regular Share", "Primary Share"]
@@ -45,3 +45,4 @@ label_synonyms:
 # App-specific redaction, on top of the default SSN/card/email/phone patterns.
 redaction_patterns:
   account_number: "\\b\\d{4}-\\d{3}-\\d{4}\\b"
+  date_mdy: "\\b\\d{2}/\\d{2}/\\d{4}\\b"   # CU Core shows dates of birth this way

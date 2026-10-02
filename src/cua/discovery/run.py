@@ -13,6 +13,7 @@ from cua.core.policy import PolicyGuard
 from cua.core.redact import Redactor
 from cua.core.text import route_of
 from cua.evidence.store import RunEvidence, new_run_id
+from cua.handoff.session import Handoff
 from cua.llm.base import LLMClient
 from cua.runtime.steps import StepError, run_login
 from cua.surface.web import WebSurface
@@ -34,6 +35,7 @@ def run_discovery(
     guard: PolicyGuard | None = None,
     include_screenshot: bool = False,
     extra_headers: dict[str, str] | None = None,
+    handoff: Handoff | None = None,
 ) -> tuple[DiscoveryTrace, Path]:
     run_id = new_run_id("discovery")
     guard = guard or PolicyGuard(ctx.policy)
@@ -64,6 +66,8 @@ def run_discovery(
         risk_ceiling=spec.risk_ceiling,
         inputs=spec.inputs,
         outputs=spec.outputs,
+        declared_outcomes=list(spec.outcomes),
+        subject=spec.subject,
         start_route=spec.start_route,
     )
     evidence.event(
@@ -107,6 +111,7 @@ def run_discovery(
             trace=trace,
             llm_redactor=redactor(),
             include_screenshot=include_screenshot,
+            handoff=handoff,
         )
         agent.run()
         evidence.capture(surface, "final", [])

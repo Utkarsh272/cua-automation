@@ -1,0 +1,8 @@
+PAGE route=/member/[identifier:32f69e84] title='Runtime Error'
+ELEMENTS:
+  e1 link name='Member Search' in='MEMBER SERVICES'
+  e2 link name='Loan Origination' in='MEMBER SERVICES'
+  e3 link name='Reports' in='MEMBER SERVICES'
+  e4 link name='Sign Out' in='MEMBER SERVICES'
+TEXT:
+Server Error in '/CUCore' Application. Runtime Error An application error occurred on the server. The current custom error settings for this application prevent the details of the application error from being viewed remotely. Module: MBR0042 Path: /member/[identifier:32f69e84] Code: E-5001

@@ -470,3 +470,15 @@ def test_dropdown_label_excludes_its_own_options(
     res = s.resolve(target({"by": "label", "text": "Account Type", "control": "combobox"}))
     s.act(res, "select", "Savings")
     assert s.read(res) == "Savings"
+
+
+def test_controls_inside_a_modal_know_their_dialog(
+    open_surface: SurfaceFactory, login_cap: Capability
+) -> None:
+    s = signed_in(open_surface, login_cap, faults="notice")
+    search(s, "10042")
+    obs = s.observe()
+    ack = next(e for e in obs.elements if e.role == "button" and e.name == "Acknowledge")
+    assert ack.dialog == "System Notice"
+    assert all(e.dialog == "" for e in obs.elements if e.name in ("Search", "Open Sub-Account"))
+    assert "dialog='System Notice'" in obs.render()

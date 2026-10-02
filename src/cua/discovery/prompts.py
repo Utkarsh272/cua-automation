@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from cua.core.artifact import ObjectSchema
+from cua.core.artifact import ObjectSchema, OutcomeDecl
 from cua.llm.base import ToolSpec
 
 SYSTEM = """\
@@ -30,8 +30,9 @@ your rationale. Call done only after every required output has been extracted.
 the record does not exist, or access is denied), call declare_outcome with a short UPPER_SNAKE \
 code and quote the exact page text that shows it.
 6. If a dialog or notice blocks the page, deal with it first (usually by acknowledging it) if \
-that is clearly safe. If something is unclear, risky, irreversible, or you are stuck, call \
-escalate instead of guessing.
+that is clearly safe. If something is unclear or you are stuck, call escalate instead of \
+guessing. When the goal itself requires a final commit (a Confirm or Submit button), click it: \
+the system pauses there by itself and a human approves or performs that one action.
 7. Prefer the most direct path. Do not explore unrelated modules.
 8. Every call must include a one-sentence rationale.
 """
@@ -64,7 +65,8 @@ TOOLS: list[ToolSpec] = [
     ),
     _tool(
         "select",
-        "Choose an option in a dropdown by its visible text.",
+        "Choose an option in a dropdown by its visible text. If the option holds input data "
+        "(shown as [REDACTED...]), pass the matching input placeholder instead.",
         {"ref": _REF, "option": {"type": "string"}},
         ["ref", "option"],
     ),
@@ -107,7 +109,9 @@ TOOLS: list[ToolSpec] = [
 TOOL_NAMES = {t.name for t in TOOLS}
 
 
-def contract_lines(inputs: ObjectSchema, outputs: ObjectSchema) -> str:
+def contract_lines(
+    inputs: ObjectSchema, outputs: ObjectSchema, outcomes: Sequence[OutcomeDecl] = ()
+) -> str:
     lines = ["Inputs (type the placeholder; the real value is filled in for you):"]
     for name, p in inputs.properties.items():
         desc = f" - {p.description}" if p.description else ""
@@ -117,6 +121,10 @@ def contract_lines(inputs: ObjectSchema, outputs: ObjectSchema) -> str:
         desc = f" - {p.description}" if p.description else ""
         req = "" if name in outputs.required else " [optional]"
         lines.append(f"  {name} ({p.type}){req}{desc}")
+    if outcomes:
+        lines.append("Known business outcomes (if one applies, declare_outcome with this code):")
+        for o in outcomes:
+            lines.append(f"  {o.code} - {o.description}")
     return "\n".join(lines)
 
 

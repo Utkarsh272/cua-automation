@@ -1,0 +1,129 @@
+# HAND-WRITTEN test fixture for the replay engine's write path: risk gating, confirmation tokens,
+# side-effect reporting. Day 7 discovers this flow for real (with human handoff at Confirm).
+schema_version: 1
+id: open_sub_account
+version: 1.0.0
+status: draft
+recorded_by: utkarsh.mittal
+provenance:
+  origin: hand_written
+  notes: Fixture for replay tests of irreversible steps.
+app: {product: cu-core, versions: ">=4.6 <5"}
+
+description: Open a new sub-account for a member, funded from one of their existing accounts.
+risk: irreversible
+subject: inputs.member_id
+
+inputs:
+  type: object
+  required: [member_id, account_type, nickname, initial_deposit, funding_account]
+  properties:
+    member_id: {type: string, pattern: "^[0-9]{5}$", x-sensitivity: identifier}
+    account_type: {type: string, enum: [Savings, Money Market, Certificate], x-sensitivity: public}
+    nickname: {type: string, maxLength: 20, x-sensitivity: public}
+    initial_deposit: {type: string, pattern: "^[0-9]+([.][0-9]{2})?$", x-sensitivity: financial}
+    funding_account: {type: string, pattern: "^[0-9]{4}-[0-9]{3}-[0-9]{4}$", x-sensitivity: identifier}
+outputs:
+  type: object
+  required: [new_account_number]
+  properties:
+    new_account_number: {type: string, x-sensitivity: identifier}
+
+outcomes:
+  - {code: VALIDATION_ERROR, description: The application rejected the account details.}
+  - {code: ACCESS_DENIED, description: The service account may not act on this member.}
+requires: [login@^1]
+
+steps:
+  - id: open_new_account_form
+    action: navigate
+    frame: [{name: main}]
+    route: "/member/{{inputs.member_id}}/accounts/new"
+    postcondition: {title_contains: Open Sub-Account}
+
+  - id: choose_account_type
+    action: select
+    option: "{{inputs.account_type}}"
+    target:
+      description: Account Type dropdown
+      frame: [{name: main}]
+      strategies:
+        - {by: label, text: Account Type, control: combobox}
+
+  - id: enter_nickname
+    action: fill
+    value: "{{inputs.nickname}}"
+    target:
+      description: Nickname text box
+      frame: [{name: main}]
+      strategies:
+        - {by: label, text: Nickname, control: textbox}
+
+  - id: enter_initial_deposit
+    action: fill
+    value: "{{inputs.initial_deposit}}"
+    target:
+      description: Initial Deposit text box
+      frame: [{name: main}]
+      strategies:
+        - {by: label, text: Initial Deposit, control: textbox}
+
+  - id: choose_funding_source
+    action: select
+    option: "{{inputs.funding_account}}"
+    target:
+      description: Funding Source dropdown
+      frame: [{name: main}]
+      strategies:
+        - {by: label, text: Funding Source, control: combobox}
+
+  - id: click_continue
+    action: click
+    risk: reversible_write
+    target:
+      description: Continue button
+      frame: [{name: main}]
+      strategies:
+        - {by: role, role: button, name: Continue}
+    wait:
+      until:
+        any_of:
+          - {title_contains: Review New Account}
+          - {detector: validation_error}
+      timeout_ms: 8000
+
+  - id: confirm
+    action: click
+    risk: irreversible
+    requires_confirmation: true
+    target:
+      description: Confirm button on the review page
+      frame: [{name: main}]
+      strategies:
+        - {by: role, role: button, name: Confirm}
+    wait:
+      until: {title_contains: Account Opened}
+      timeout_ms: 8000
+
+  - id: read_new_account_number
+    action: extract
+    output: new_account_number
+    parse: text
+    target:
+      description: Value next to "New Account Number"
+      frame: [{name: main}]
+      strategies:
+        - {by: label, text: New Account Number, control: value_cell}
+
+detectors:
+  - id: validation_error
+    when: {text_visible: Please correct the errors below.}
+    then: {outcome: VALIDATION_ERROR}
+  - id: access_denied
+    when: {title_contains: Access Denied}
+    then: {outcome: ACCESS_DENIED}
+
+success:
+  all_of:
+    - {title_contains: Account Opened}
+    - {output_present: new_account_number}

@@ -84,6 +84,7 @@ class ObservedElement:
     row: tuple[str, ...] = ()
     column: str = ""
     context: str = ""  # title of the form/table the control sits in, e.g. "Find Member"
+    dialog: str = ""  # title of the dialog/overlay the control sits in, if any
     disabled: bool = False
     sensitive: bool = False  # e.g. password fields; value never shown
     bbox: tuple[int, int, int, int] | None = None
@@ -134,6 +135,8 @@ class Observation:
                 parts.append(f"options={list(e.options)}")
             if e.context:
                 parts.append(f"in={e.context!r}")
+            if e.dialog:
+                parts.append(f"dialog={e.dialog!r}")
             if e.disabled:
                 parts.append("disabled")
             lines.append(" ".join(parts))
@@ -162,6 +165,10 @@ class Surface(Protocol):
     def read(self, res: Resolution) -> str: ...
 
     def settle(self, timeout_ms: int = 5000) -> None: ...
+
+    def control_name(self, res: Resolution) -> str: ...
+
+    def alerts(self) -> list[str]: ...
 
     def pause(self, ms: int) -> None:
         """Let the UI make progress without busy-waiting (used by condition polling)."""

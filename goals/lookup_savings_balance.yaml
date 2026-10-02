@@ -35,6 +35,18 @@ outputs:
       description: Current savings account balance in USD.
       x-sensitivity: financial
 
+subject: inputs.member_id      # whose data this touches (enables subject binding)
+
+# Business outcomes the person expects. The model is told these codes; a run that hits one
+# declares it with quoted page text, and the compiler turns that quote into a detector.
+outcomes:
+  - code: MEMBER_NOT_FOUND
+    description: No member exists with this ID.
+  - code: ACCESS_DENIED
+    description: The service account may not view this member (restricted record).
+  - code: NO_SAVINGS_ACCOUNT
+    description: The member exists but has no savings account.
+
 # Used only during discovery. The model never sees this value, only {{inputs.member_id}}.
 example_inputs:
   member_id: "10042"

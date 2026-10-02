@@ -1,0 +1,10 @@
+{"seq": 1, "t_ms": 0, "ts": "2026-10-02T00:39:05.499+00:00", "kind": "replay_started", "capability": "lookup_savings_balance@1.0.1", "status": "approved", "tenant": "tenant-a", "caller": "cli:utkarshmittal", "on_behalf_of": null, "attended": false, "inputs": {"member_id": "[identifier:32f69e84]"}}
+{"seq": 2, "t_ms": 571, "ts": "2026-10-02T00:39:06.070+00:00", "kind": "step_ok", "step": "open_login", "action": "navigate"}
+{"seq": 3, "t_ms": 682, "ts": "2026-10-02T00:39:06.182+00:00", "kind": "step_ok", "step": "enter_user_id", "action": "fill"}
+{"seq": 4, "t_ms": 779, "ts": "2026-10-02T00:39:06.278+00:00", "kind": "step_ok", "step": "enter_password", "action": "fill"}
+{"seq": 5, "t_ms": 1025, "ts": "2026-10-02T00:39:06.525+00:00", "kind": "step_ok", "step": "submit_sign_on", "action": "click"}
+{"seq": 6, "t_ms": 1032, "ts": "2026-10-02T00:39:06.531+00:00", "kind": "login_ok", "login": "login@1.0.0"}
+{"seq": 7, "t_ms": 1211, "ts": "2026-10-02T00:39:06.711+00:00", "kind": "step_ok", "step": "open_search", "action": "navigate"}
+{"seq": 8, "t_ms": 1292, "ts": "2026-10-02T00:39:06.792+00:00", "kind": "step_ok", "step": "enter_member_id", "action": "fill"}
+{"seq": 9, "t_ms": 1618, "ts": "2026-10-02T00:39:07.118+00:00", "kind": "screenshot", "path": "screenshots/01-failure.png"}
+{"seq": 10, "t_ms": 1661, "ts": "2026-10-02T00:39:07.161+00:00", "kind": "replay_finished", "result": "failure", "code": "APP_ERROR", "at_step": "click_search"}

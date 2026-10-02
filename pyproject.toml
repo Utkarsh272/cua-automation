@@ -57,6 +57,7 @@ ignore = ["RUF012"]
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["E501"]
 "src/cua/cli.py" = ["B008"]  # typer's Option(...) defaults are the documented idiom
+"src/cua/operator/console.py" = ["B008"]
 
 [tool.mypy]
 python_version = "3.11"

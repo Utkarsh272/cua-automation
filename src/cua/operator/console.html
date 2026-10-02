@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Operator console</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --ink:#1b2430; --dim:#5d6878; --line:#d9dee6;
+          --accent:#1f5fbf; --warn:#a15c00; --bad:#b3261e; --ok:#1a7f4b; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.45 system-ui, sans-serif; background:var(--bg); color:var(--ink); }
+  header { padding:12px 20px; background:var(--card); border-bottom:1px solid var(--line);
+           display:flex; justify-content:space-between; align-items:center; }
+  h1 { font-size:17px; margin:0; }
+  main { max-width:980px; margin:0 auto; padding:16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:8px;
+          padding:16px; margin-bottom:14px; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .tag { font-size:12px; padding:2px 8px; border-radius:10px; border:1px solid var(--line); }
+  .open { color:var(--warn); border-color:var(--warn); }
+  .claimed { color:var(--accent); border-color:var(--accent); }
+  .resolved { color:var(--ok); border-color:var(--ok); }
+  .aborted, .timed_out { color:var(--bad); border-color:var(--bad); }
+  .dim { color:var(--dim); }
+  dl { display:grid; grid-template-columns:max-content 1fr; gap:4px 14px; margin:10px 0; }
+  dt { color:var(--dim); }
+  dd { margin:0; overflow-wrap:anywhere; }
+  button { font:inherit; padding:7px 14px; border-radius:6px; border:1px solid var(--line);
+           background:#fff; cursor:pointer; }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  button.danger { color:var(--bad); border-color:var(--bad); }
+  input { font:inherit; padding:7px 10px; border:1px solid var(--line); border-radius:6px; }
+  img { max-width:100%; border:1px solid var(--line); border-radius:6px; margin-top:8px; }
+  ol { margin:6px 0; padding-left:20px; }
+  .err { color:var(--bad); }
+</style>
+</head>
+<body>
+<header><h1>Operator console</h1><span id="who" class="dim"></span></header>
+<main>
+  <div id="signin" class="card">
+    <p>Sign in with your operator token.</p>
+    <div class="row">
+      <input id="token" type="password" size="40" placeholder="operator token" autocomplete="off">
+      <button class="primary" id="go">Sign in</button>
+      <span id="signerr" class="err"></span>
+    </div>
+  </div>
+  <div id="list"></div>
+</main>
+<script>
+const LABELS = {
+  approve: "Approve: let automation do this step",
+  step_done: "I did this step myself; continue",
+  resume: "Fixed it; hand back to automation",
+  abort: "Abort the run",
+};
+let token = "", me = null;
+const shots = {};
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) =>
+  ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+
+async function api(path, method = "GET", body) {
+  const r = await fetch(path, {method, headers: {
+    "Authorization": "Bearer " + token, "Content-Type": "application/json"},
+    body: body ? JSON.stringify(body) : undefined});
+  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || r.statusText);
+  return r;
+}
+
+async function shot(id) {
+  if (!shots[id]) {
+    try { shots[id] = URL.createObjectURL(await (await api(`/api/interventions/${id}/screenshot`)).blob()); }
+    catch (e) { shots[id] = ""; }
+  }
+  return shots[id];
+}
+
+async function act(id, what, body) {
+  try { await api(`/api/interventions/${id}/${what}`, "POST", body); }
+  catch (e) { alert(e.message); }
+  refresh();
+}
+
+function card(i, img) {
+  const mine = i.status === "claimed" && i.claimed_by === me.id;
+  let buttons = "";
+  if (i.status === "open")
+    buttons = `<button class="primary" data-id="${i.id}" data-do="claim">Claim and take control</button>`;
+  else if (mine && !i.decision)
+    buttons = i.allowed.map((a) =>
+      `<button class="${a === "abort" ? "danger" : "primary"}" data-id="${i.id}" data-do="${a}">${LABELS[a]}</button>`).join("");
+  const human = i.human_actions.map((h) =>
+    `<li>${esc(h.event)} ${esc(h.role)} ${esc(h.label || h.name)}${h.value ? " = " + esc(h.value) : ""} <span class="dim">on ${esc(h.route)}</span></li>`).join("");
+  return `<div class="card">
+    <div class="row"><strong>${esc(i.capability)}</strong>
+      <span class="tag ${i.status}">${i.status}${i.claimed_by ? " by " + esc(i.claimed_by) : ""}</span>
+      <span class="tag">${esc(i.kind)}</span><span class="tag">${esc(i.mode)}</span>
+      <span class="dim">${esc(i.tenant)} &middot; ${esc(i.created_at)}</span></div>
+    <dl>
+      <dt>Why it paused</dt><dd>${esc(i.reason)}</dd>
+      <dt>Step</dt><dd>${esc(i.step || "-")}: ${esc(i.step_description)}</dd>
+      <dt>Before handing back</dt><dd>${esc(i.expects_on_return)}</dd>
+      <dt>Run</dt><dd class="dim">${esc(i.run_id)} &middot; ${esc(i.id)}</dd>
+    </dl>
+    ${mine ? `<p><strong>You have control.</strong> Use the automation's browser window now; your clicks and edits are recorded.</p>` : ""}
+    <div class="row">${buttons}</div>
+    ${human ? `<p class="dim">Recorded operator actions</p><ol>${human}</ol>` : ""}
+    ${i.notes.length ? `<p class="dim">${i.notes.map(esc).join("<br>")}</p>` : ""}
+    ${img ? `<img src="${img}" alt="Redacted screenshot at the pause">` : ""}
+  </div>`;
+}
+
+async function refresh() {
+  if (!me) return;
+  let items;
+  try { items = await (await api("/api/interventions")).json(); } catch (e) { return; }
+  const parts = [];
+  for (const i of items) {
+    if (i.status === "claimed" && i.claimed_by === me.id && !i.decision)
+      api(`/api/interventions/${i.id}/heartbeat`, "POST").catch(() => {});
+    parts.push(card(i, i.has_screenshot ? await shot(i.id) : ""));
+  }
+  $("list").innerHTML = parts.join("") || `<div class="card dim">Nothing is waiting for an operator.</div>`;
+}
+
+$("list").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-do]");
+  if (!b) return;
+  const what = b.dataset.do;
+  if (what === "claim") return act(b.dataset.id, "claim");
+  if (what === "abort" && !confirm("Abort this run?")) return;
+  act(b.dataset.id, "decision", {action: what});
+});
+
+$("go").addEventListener("click", async () => {
+  token = $("token").value.trim();
+  try {
+    me = await (await api("/api/me")).json();
+    $("signin").style.display = "none";
+    $("who").textContent = `${me.id} (${me.tenants.join(", ")})`;
+    refresh(); setInterval(refresh, 2000);
+  } catch (e) { $("signerr").textContent = "Token not recognised."; }
+});
+</script>
+</body>
+</html>

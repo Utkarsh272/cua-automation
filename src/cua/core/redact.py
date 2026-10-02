@@ -142,9 +142,15 @@ class Redactor:
     # --- applying ---------------------------------------------------------------------------
 
     def redact_text(self, text: str) -> str:
-        for known in sorted(self._known, key=len, reverse=True):
-            if known in text:
-                text = text.replace(known, self._known[known])
+        # Case-insensitive: an app may show a value in another case (svc_automation as
+        # SVC_AUTOMATION). Longest first, so a value never leaks through a shorter overlap.
+        if self._known:
+            folded = {k.casefold(): v for k, v in self._known.items()}
+            rx = re.compile(
+                "|".join(_bounded(k) for k in sorted(self._known, key=len, reverse=True)),
+                re.IGNORECASE,
+            )
+            text = rx.sub(lambda m: folded[m.group(0).casefold()], text)
         for p in self.patterns:
             text = p.regex.sub(partial(self._pattern_sub, p=p), text)
         return text
@@ -174,6 +180,17 @@ class Redactor:
             masked = self.redact_text(str(obj))
             return obj if masked == str(obj) else masked
         return obj
+
+
+def _bounded(value: str) -> str:
+    """A known value as a regex that never matches *inside a longer number*: a deposit of 250
+    must not blank the middle of an unrelated 102509 (a timestamp, a token count)."""
+    rx = re.escape(value)
+    if value[:1].isdigit():
+        rx = r"(?<!\d)" + rx
+    if value[-1:].isdigit():
+        rx = rx + r"(?!\d)"
+    return rx
 
 
 def find_sensitive(text: str, patterns: tuple[Pattern, ...] = DEFAULT_PATTERNS) -> list[str]:

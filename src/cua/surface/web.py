@@ -67,6 +67,34 @@ from .base import (
 )
 
 DOM_JS = (Path(__file__).parent / "dom.js").read_text(encoding="utf-8")
+
+# Reports what a *person* does in the window during a handoff (clicks and edits only; no
+# keystrokes, and never the value of a sensitive field). Runs in every frame.
+HUMAN_JS = """
+(() => {
+  if (window.__cuaHumanHooked) return;
+  window.__cuaHumanHooked = true;
+  const CONTROL = 'button, a, input, select, textarea, [role=button], [role=link]';
+  const report = (kind, ev) => {
+    try {
+      if (!ev.isTrusted || !window.__cua || !window.__cuaHumanEvent) return;
+      const el = ev.target && ev.target.closest ? ev.target.closest(CONTROL) : null;
+      if (!el) return;
+      const d = window.__cua.describe(el);
+      const out = {event: kind, role: d.role, name: d.name, label: d.label, tag: d.tag,
+                   route: location.pathname, title: document.title};
+      if (kind === 'change') {
+        out.value = d.sensitive ? '[not recorded]'
+          : (el.tagName === 'SELECT' ? (el.selectedOptions[0] || {}).text || ''
+          : (el.type === 'checkbox' || el.type === 'radio') ? String(el.checked) : el.value);
+      }
+      window.__cuaHumanEvent(out);
+    } catch (e) { /* never break the page */ }
+  };
+  document.addEventListener('click', (e) => report('click', e), true);
+  document.addEventListener('change', (e) => report('change', e), true);
+})();
+"""
 CHROMIUM_ENV = "CUA_CHROMIUM_PATH"
 
 # Attribute values that look generated (ctl00_main_txtMid_3fa9c1, react-17, :r3:) are never
@@ -104,6 +132,7 @@ class WebSurface:
         content_frame: tuple[FrameRef, ...] = (),
         url_guard: Callable[[str], bool] | None = None,
         action_timeout_ms: int = 5000,
+        settle_ms: int = 5000,
     ) -> None:
         self.context = context
         self.base_url = base_url.rstrip("/") + "/"
@@ -115,8 +144,16 @@ class WebSurface:
         self._last_nav = time.monotonic()
         self._refs: dict[str, tuple[Frame, ElementHandle, dict[str, Any]]] = {}
 
+        self.settle_ms = settle_ms
+        # Called before every automation action. The engines set it to the control-lease check,
+        # so automation cannot act while a person holds the session.
+        self.gate: Callable[[], None] | None = None
+        # Set by the handoff while a person drives; receives their clicks and edits.
+        self.on_human_event: Callable[[dict[str, Any]], None] | None = None
         context.set_default_timeout(action_timeout_ms)
         context.add_init_script(DOM_JS)
+        context.expose_binding("__cuaHumanEvent", self._on_human)
+        context.add_init_script(HUMAN_JS)
         context.route("**/*", self._on_route)
         self.page: Page = context.new_page()
         self.page.on("dialog", self._on_dialog)
@@ -145,7 +182,7 @@ class WebSurface:
 
     def start(self, route: str = "/") -> None:
         self.page.goto(urljoin(self.base_url, route.lstrip("/")), wait_until="load")
-        self.settle()
+        self.settle(self.settle_ms)
 
     def close(self) -> None:
         self._dispose_refs()
@@ -176,6 +213,14 @@ class WebSurface:
         if request.resource_type == "document":
             self._pending_docs = max(0, self._pending_docs - 1)
             self._touch()
+
+    def _on_human(self, _source: Any, event: Any) -> None:
+        if self.on_human_event is not None and isinstance(event, dict):
+            self.on_human_event({k: str(v)[:200] for k, v in event.items()})
+
+    def bring_to_front(self) -> None:
+        with contextlib.suppress(PlaywrightError):
+            self.page.bring_to_front()
 
     def _on_dialog(self, dialog: Dialog) -> None:
         self.native_dialogs.append(
@@ -307,6 +352,10 @@ class WebSurface:
                 h.dispose()
         raise ResolutionError(target, tuple(attempts))
 
+    def same_element(self, a: Resolution, b: Resolution) -> bool:
+        (fa, ea), (fb, eb) = a.handle, b.handle
+        return fa == fb and bool(fa.evaluate("(p) => p.x === p.y", {"x": ea, "y": eb}))
+
     def count(self, target: TargetSpec) -> int:
         try:
             frame = self.frame(target.frame)
@@ -327,6 +376,8 @@ class WebSurface:
     # --- acting and reading -----------------------------------------------------------------
 
     def act(self, res: Resolution, action: ActionName, value: str | None = None) -> None:
+        if self.gate is not None:
+            self.gate()
         _frame, el = res.handle
         self.native_dialogs.clear()
         if action == "click":
@@ -343,6 +394,9 @@ class WebSurface:
             match = next((o for o in options if normalize(o["t"]) == want), None) or next(
                 (o for o in options if o["v"] == value), None
             )
+            if match is None and value:  # e.g. an account number inside "Checking - 0042-..."
+                inside = [o for o in options if value in o["t"]]
+                match = inside[0] if len(inside) == 1 else None
             if match is None:
                 raise ValueError(f"option {value!r} not in {[o['t'] for o in options]}")
             el.select_option(value=match["v"])
@@ -350,7 +404,7 @@ class WebSurface:
             el.press(value or "Enter")
         else:  # pragma: no cover - ActionName is closed
             raise ValueError(action)
-        self.settle()
+        self.settle(self.settle_ms)
 
     def read(self, res: Resolution) -> str:
         frame, el = res.handle
@@ -358,6 +412,8 @@ class WebSurface:
         return str(el.evaluate("(e) => window.__cua.readValue(e)"))
 
     def navigate(self, route: str, frame: tuple[FrameRef, ...] = ()) -> None:
+        if self.gate is not None:
+            self.gate()
         url = urljoin(self.base_url, route.lstrip("/"))
         self.native_dialogs.clear()
         try:
@@ -366,7 +422,25 @@ class WebSurface:
             if url in self.blocked or "ERR_BLOCKED_BY_CLIENT" in str(exc):
                 raise NavigationBlocked(url) from exc
             raise
-        self.settle()
+        self.settle(self.settle_ms)
+
+    def control_name(self, res: Resolution) -> str:
+        """The name a person would read for a resolved control (for policy risk rules)."""
+        frame, el = res.handle
+        self._lib(frame)
+        return str(
+            el.evaluate("(e) => window.__cua.nameOf(e) || (window.__cua.labelsOf(e)[0] || '')")
+        )
+
+    def alerts(self) -> list[str]:
+        """Visible application messages (error/warning banners, field errors)."""
+        out: list[str] = []
+        for f in self.page.frames:
+            try:
+                out += self._lib(f).evaluate("() => window.__cua.alerts()")
+            except PlaywrightError:
+                continue
+        return out[:5]
 
     def pause(self, ms: int) -> None:
         self.page.wait_for_timeout(ms)
@@ -463,6 +537,7 @@ class WebSurface:
                         row=tuple(info["row"]),
                         column=info["column"],
                         context=info["context"],
+                        dialog=info["dialog"],
                         disabled=info["disabled"],
                         sensitive=info["sensitive"],
                         bbox=_rect(h.bounding_box()),

@@ -130,6 +130,10 @@ class PolicyGuard:
             for r in config.risk_rules
         ]
 
+    @property
+    def tokens(self) -> ConfirmationTokens | None:
+        return self._tokens
+
     # --- location ---------------------------------------------------------------------------
 
     def check_url(self, url: str) -> PolicyDecision:

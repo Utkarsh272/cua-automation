@@ -8,7 +8,7 @@ import pytest
 from ruamel.yaml import YAML
 
 ROOT = Path(__file__).resolve().parents[1]
-LOOKUP = ROOT / "capabilities" / "lookup_savings_balance" / "1.0.0.yaml"
+LOOKUP = ROOT / "tests" / "fixtures" / "reference" / "lookup_savings_balance.hand_written.yaml"
 LOGIN = ROOT / "capabilities" / "login" / "1.0.0.yaml"
 
 

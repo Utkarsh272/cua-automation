@@ -1,0 +1,16 @@
+{
+  "run_id": "replay_2026-10-02T16-22-32Z_0d34",
+  "capability": "lookup_savings_balance",
+  "version": "1.1.0",
+  "tenant": "tenant-a",
+  "started_at": "2026-10-02T16:22:32.547567Z",
+  "duration_ms": 1399,
+  "llm_calls": 0,
+  "kind": "success",
+  "outputs": {
+    "member_name": "[REDACTED:pii]",
+    "savings_balance": "[REDACTED:financial]"
+  },
+  "degraded": false,
+  "recoveries": []
+}

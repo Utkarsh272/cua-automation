@@ -11,6 +11,8 @@ from cua.core.profile import load_profile, load_tenant
 from cua.core.semver import satisfies
 from target_app.state import SERVICE_PASSWORD
 
+ROOT = Path(__file__).resolve().parents[1]
+
 
 def test_all_capabilities_load_and_verify(root: Path) -> None:
     files = sorted((root / "capabilities").glob("*/*.yaml"))
@@ -53,3 +55,21 @@ def test_no_credentials_in_repo_files(root: Path) -> None:
         if path.is_file() and not skip and path.suffix in suffixes and path.name not in allowed:
             text = path.read_text(encoding="utf-8", errors="ignore")
             assert SERVICE_PASSWORD not in text, path
+
+
+def test_report_uses_the_seven_required_headings() -> None:
+    """The brief asks for these exact headings, in this order."""
+    headings = [
+        line[3:].strip()
+        for line in (ROOT / "REPORT.md").read_text(encoding="utf-8").splitlines()
+        if line.startswith("## ")
+    ]
+    assert headings == [
+        "1. Architecture",
+        "2. Artifact schema",
+        "3. Determinism & error handling",
+        "4. Heterogeneity & multi-tenant",
+        "5. Escalation & handoff",
+        "6. Safety",
+        "7. Cuts",
+    ]

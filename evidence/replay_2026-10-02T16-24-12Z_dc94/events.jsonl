@@ -1,0 +1,24 @@
+{"seq": 1, "t_ms": 0, "ts": "2026-10-02T16:24:12.012+00:00", "kind": "replay_started", "capability": "open_sub_account@1.0.0", "status": "approved", "tenant": "tenant-a", "caller": "cli:utkarshmittal", "on_behalf_of": null, "attended": false, "inputs": {"member_id": "[identifier:32f69e84]", "account_type": "Savings", "nickname": "Holiday", "initial_deposit": "[REDACTED:financial]", "funding_account": "[identifier:e3750089]"}}
+{"seq": 2, "t_ms": 1158, "ts": "2026-10-02T16:24:13.170+00:00", "kind": "step_ok", "step": "open_login", "action": "navigate"}
+{"seq": 3, "t_ms": 1253, "ts": "2026-10-02T16:24:13.266+00:00", "kind": "step_ok", "step": "enter_user_id", "action": "fill"}
+{"seq": 4, "t_ms": 1323, "ts": "2026-10-02T16:24:13.336+00:00", "kind": "step_ok", "step": "enter_password", "action": "fill"}
+{"seq": 5, "t_ms": 1553, "ts": "2026-10-02T16:24:13.565+00:00", "kind": "step_ok", "step": "submit_sign_on", "action": "click"}
+{"seq": 6, "t_ms": 1558, "ts": "2026-10-02T16:24:13.571+00:00", "kind": "login_ok", "login": "login@1.0.0"}
+{"seq": 7, "t_ms": 1745, "ts": "2026-10-02T16:24:13.758+00:00", "kind": "step_ok", "step": "open_search", "action": "navigate"}
+{"seq": 8, "t_ms": 1830, "ts": "2026-10-02T16:24:13.843+00:00", "kind": "step_ok", "step": "enter_member_id", "action": "fill"}
+{"seq": 9, "t_ms": 2099, "ts": "2026-10-02T16:24:14.111+00:00", "kind": "step_ok", "step": "click_search", "action": "click"}
+{"seq": 10, "t_ms": 2372, "ts": "2026-10-02T16:24:14.385+00:00", "kind": "step_ok", "step": "click_open_sub_account", "action": "click"}
+{"seq": 11, "t_ms": 2459, "ts": "2026-10-02T16:24:14.471+00:00", "kind": "step_ok", "step": "enter_nickname", "action": "fill"}
+{"seq": 12, "t_ms": 2530, "ts": "2026-10-02T16:24:14.543+00:00", "kind": "step_ok", "step": "enter_initial_deposit", "action": "fill"}
+{"seq": 13, "t_ms": 2602, "ts": "2026-10-02T16:24:14.615+00:00", "kind": "step_ok", "step": "choose_funding_source", "action": "select"}
+{"seq": 14, "t_ms": 2673, "ts": "2026-10-02T16:24:14.686+00:00", "kind": "step_ok", "step": "choose_account_type", "action": "select"}
+{"seq": 15, "t_ms": 2924, "ts": "2026-10-02T16:24:14.937+00:00", "kind": "step_ok", "step": "click_continue", "action": "click"}
+{"seq": 16, "t_ms": 3091, "ts": "2026-10-02T16:24:15.104+00:00", "kind": "screenshot", "path": "screenshots/01-handoff-confirmation.png"}
+{"seq": 17, "t_ms": 3092, "ts": "2026-10-02T16:24:15.105+00:00", "kind": "intervention_opened", "id": "int_20261002T162415_d62342", "intervention_kind": "confirmation", "step": "click_confirm", "reason": "click_confirm: irreversible action needs confirmation"}
+{"seq": 18, "t_ms": 56232, "ts": "2026-10-02T16:25:08.246+00:00", "kind": "intervention_claimed", "id": "int_20261002T162415_d62342", "operator": "ops.alex"}
+{"seq": 19, "t_ms": 58476, "ts": "2026-10-02T16:25:10.489+00:00", "kind": "operator_decision", "id": "int_20261002T162415_d62342", "action": "approve", "operator": "ops.alex"}
+{"seq": 20, "t_ms": 58567, "ts": "2026-10-02T16:25:10.580+00:00", "kind": "intervention_resolved", "id": "int_20261002T162415_d62342", "action": "approve"}
+{"seq": 21, "t_ms": 58569, "ts": "2026-10-02T16:25:10.581+00:00", "kind": "confirmed", "step": "click_confirm", "confirmed_by": "ops.alex"}
+{"seq": 22, "t_ms": 59038, "ts": "2026-10-02T16:25:11.050+00:00", "kind": "step_ok", "step": "click_confirm", "action": "click"}
+{"seq": 23, "t_ms": 59058, "ts": "2026-10-02T16:25:11.071+00:00", "kind": "step_ok", "step": "read_new_account_number", "action": "extract"}
+{"seq": 24, "t_ms": 59144, "ts": "2026-10-02T16:25:11.157+00:00", "kind": "replay_finished", "result": "success", "code": null, "at_step": null}

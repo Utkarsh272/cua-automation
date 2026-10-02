@@ -1,0 +1,42 @@
+{
+  "capability": "lookup_savings_balance@1.1.0",
+  "tenant": "tenant-a",
+  "runs": 20,
+  "results": {
+    "success": 20
+  },
+  "success_rate": 1.0,
+  "degraded_runs": 0,
+  "runs_with_recoveries": 0,
+  "distinct_outputs": 1,
+  "duration_ms": {
+    "min": 1372,
+    "median": 1400,
+    "max": 1646
+  },
+  "llm_calls": 0,
+  "stable": true,
+  "not_success": [],
+  "run_ids": [
+    "replay_2026-10-02T16-22-26Z_f491",
+    "replay_2026-10-02T16-22-28Z_a8f2",
+    "replay_2026-10-02T16-22-29Z_72b4",
+    "replay_2026-10-02T16-22-31Z_62ef",
+    "replay_2026-10-02T16-22-32Z_0d34",
+    "replay_2026-10-02T16-22-33Z_f4ff",
+    "replay_2026-10-02T16-22-35Z_0906",
+    "replay_2026-10-02T16-22-36Z_51a7",
+    "replay_2026-10-02T16-22-38Z_628d",
+    "replay_2026-10-02T16-22-39Z_dc9f",
+    "replay_2026-10-02T16-22-41Z_c188",
+    "replay_2026-10-02T16-22-42Z_b549",
+    "replay_2026-10-02T16-22-43Z_2ff7",
+    "replay_2026-10-02T16-22-45Z_ea6d",
+    "replay_2026-10-02T16-22-46Z_5a6b",
+    "replay_2026-10-02T16-22-48Z_5f85",
+    "replay_2026-10-02T16-22-49Z_9582",
+    "replay_2026-10-02T16-22-50Z_2cd9",
+    "replay_2026-10-02T16-22-52Z_e733",
+    "replay_2026-10-02T16-22-53Z_7e88"
+  ]
+}

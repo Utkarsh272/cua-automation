@@ -1,0 +1,326 @@
+{
+  "schema_version": 1,
+  "run_id": "discovery_2026-10-01T17-23-48Z_cd2e",
+  "capability_id": "lookup_savings_balance",
+  "description": "Look up a credit union member by member ID and return their name and current savings balance.",
+  "goal": "Find the member whose member ID is {{inputs.member_id}} and read their full name and the current balance of their savings account.\n",
+  "tenant": "tenant-a",
+  "app_product": "cu-core",
+  "app_version": "4.6.2",
+  "login": "login@1.0.0",
+  "provider": "groq",
+  "model": "openai/gpt-oss-120b",
+  "started_at": "2026-10-01T17:23:48.122093Z",
+  "finished_at": "2026-10-01T17:23:52.095628Z",
+  "status": "business_outcome",
+  "reason": "ACCESS_DENIED: Access Denied. Your user profile (SVC_AUTOMATION) is not authorized to view restricted member records.",
+  "risk_ceiling": "read",
+  "inputs": {
+    "type": "object",
+    "required": [
+      "member_id"
+    ],
+    "properties": {
+      "member_id": {
+        "type": "string",
+        "description": "Five-digit member ID.",
+        "sensitivity": "identifier",
+        "pattern": "^[0-9]{5}$"
+      }
+    },
+    "additionalProperties": false
+  },
+  "outputs": {
+    "type": "object",
+    "required": [
+      "member_name",
+      "savings_balance"
+    ],
+    "properties": {
+      "member_name": {
+        "type": "string",
+        "description": "Member's full name as shown on the member record.",
+        "sensitivity": "pii"
+      },
+      "savings_balance": {
+        "type": "number",
+        "description": "Current savings account balance in USD.",
+        "sensitivity": "financial"
+      }
+    },
+    "additionalProperties": false
+  },
+  "declared_outcomes": [
+    {
+      "code": "MEMBER_NOT_FOUND",
+      "description": "No member exists with this ID."
+    },
+    {
+      "code": "ACCESS_DENIED",
+      "description": "The service account may not view this member (restricted record)."
+    },
+    {
+      "code": "NO_SAVINGS_ACCOUNT",
+      "description": "The member exists but has no savings account."
+    }
+  ],
+  "subject": "inputs.member_id",
+  "start_route": "/search",
+  "steps": [
+    {
+      "index": 1,
+      "tool": "fill",
+      "args": {
+        "rationale": "Enter the provided member ID to locate the member record.",
+        "ref": "e7",
+        "value": "{{inputs.member_id}}"
+      },
+      "rationale": "Enter the provided member ID to locate the member record.",
+      "ref": "e7",
+      "element": {
+        "role": "textbox",
+        "label": "Member ID",
+        "name": "",
+        "tag": "input",
+        "row": [
+          "Member ID:",
+          ""
+        ],
+        "column": "",
+        "context": "Find Member",
+        "dialog": "",
+        "frame": [
+          {
+            "name": "main",
+            "url_contains": null
+          }
+        ]
+      },
+      "target": {
+        "description": "textbox 'Member ID' (lookup_savings_balance)",
+        "frame": [
+          {
+            "name": "main",
+            "url_contains": null
+          }
+        ],
+        "strategies": [
+          {
+            "by": "label",
+            "text": "Member ID",
+            "control": "textbox"
+          },
+          {
+            "by": "attribute",
+            "attr": "name",
+            "value": "ctl00$main$txtMid",
+            "tag": "input"
+          }
+        ],
+        "fingerprint": null
+      },
+      "target_note": null,
+      "fingerprint": {
+        "tag": "input",
+        "role": "textbox",
+        "name": null,
+        "near_text": "Member ID",
+        "row_context": [
+          "Member ID:",
+          ""
+        ],
+        "attributes": {
+          "name": "ctl00$main$txtMid",
+          "type": "text"
+        },
+        "bbox": [
+          325,
+          128,
+          97,
+          21
+        ]
+      },
+      "before": {
+        "route": "/search",
+        "title": "CU Core - Member Search"
+      },
+      "after": {
+        "route": "/search",
+        "title": "CU Core - Member Search"
+      },
+      "policy": {
+        "verdict": "allow",
+        "effective_risk": "read",
+        "reason": "read action"
+      },
+      "status": "ok",
+      "error": null,
+      "output": null,
+      "parser": null,
+      "value": null,
+      "llm": {
+        "provider": "groq",
+        "model": "openai/gpt-oss-120b",
+        "request_id": "chatcmpl-210d1f6b-14bf-48b6-8046-079123638df1",
+        "input_tokens": 1434,
+        "output_tokens": 73,
+        "latency_ms": 466,
+        "retries": 0
+      },
+      "t_ms": 580
+    },
+    {
+      "index": 2,
+      "tool": "click",
+      "args": {
+        "rationale": "Submit the member ID search to locate the member record",
+        "ref": "e8"
+      },
+      "rationale": "Submit the member ID search to locate the member record",
+      "ref": "e8",
+      "element": {
+        "role": "button",
+        "label": "",
+        "name": "Search",
+        "tag": "input",
+        "row": [
+          "",
+          ""
+        ],
+        "column": "",
+        "context": "Find Member",
+        "dialog": "",
+        "frame": [
+          {
+            "name": "main",
+            "url_contains": null
+          }
+        ]
+      },
+      "target": {
+        "description": "button 'Search' (lookup_savings_balance)",
+        "frame": [
+          {
+            "name": "main",
+            "url_contains": null
+          }
+        ],
+        "strategies": [
+          {
+            "by": "role",
+            "role": "button",
+            "name": "Search",
+            "exact": true,
+            "near_text": "Find Member"
+          },
+          {
+            "by": "attribute",
+            "attr": "name",
+            "value": "ctl00$main$btnSearch",
+            "tag": "input"
+          }
+        ],
+        "fingerprint": null
+      },
+      "target_note": null,
+      "fingerprint": {
+        "tag": "input",
+        "role": "button",
+        "name": "Search",
+        "near_text": null,
+        "row_context": [
+          "",
+          ""
+        ],
+        "attributes": {
+          "name": "ctl00$main$btnSearch",
+          "type": "submit"
+        },
+        "bbox": [
+          325,
+          158,
+          58,
+          21
+        ]
+      },
+      "before": {
+        "route": "/search",
+        "title": "CU Core - Member Search"
+      },
+      "after": {
+        "route": "/member/[identifier:4456dab3]",
+        "title": "CU Core - Access Denied"
+      },
+      "policy": {
+        "verdict": "allow",
+        "effective_risk": "read",
+        "reason": "read action"
+      },
+      "status": "ok",
+      "error": null,
+      "output": null,
+      "parser": null,
+      "value": null,
+      "llm": {
+        "provider": "groq",
+        "model": "openai/gpt-oss-120b",
+        "request_id": "chatcmpl-44833fdb-ed60-4d76-b03a-24673adb71d2",
+        "input_tokens": 1475,
+        "output_tokens": 59,
+        "latency_ms": 1431,
+        "retries": 0
+      },
+      "t_ms": 2192
+    },
+    {
+      "index": 3,
+      "tool": "declare_outcome",
+      "args": {
+        "code": "ACCESS_DENIED",
+        "evidence": "Access Denied. Your user profile (SVC_AUTOMATION) is not authorized to view restricted member records.",
+        "rationale": "The page indicates the service account cannot view this member, so declare ACCESS_DENIED outcome."
+      },
+      "rationale": "The page indicates the service account cannot view this member, so declare ACCESS_DENIED outcome.",
+      "ref": null,
+      "element": null,
+      "target": null,
+      "target_note": null,
+      "fingerprint": null,
+      "before": {
+        "route": "/member/[identifier:4456dab3]",
+        "title": "CU Core - Access Denied"
+      },
+      "after": null,
+      "policy": null,
+      "status": "ok",
+      "error": null,
+      "output": null,
+      "parser": null,
+      "value": null,
+      "llm": {
+        "provider": "groq",
+        "model": "openai/gpt-oss-120b",
+        "request_id": "chatcmpl-3d0f9772-831d-455c-b856-4602dba84c0b",
+        "input_tokens": 1515,
+        "output_tokens": 110,
+        "latency_ms": 436,
+        "retries": 0
+      },
+      "t_ms": 2967
+    }
+  ],
+  "extracted": {},
+  "verified_outputs": {},
+  "outcome": {
+    "code": "ACCESS_DENIED",
+    "detail": "The page indicates the service account cannot view this member, so declare ACCESS_DENIED outcome.",
+    "evidence_text": "Access Denied. Your user profile (SVC_AUTOMATION) is not authorized to view restricted member records.",
+    "page": {
+      "route": "/member/[identifier:4456dab3]",
+      "title": "CU Core - Access Denied"
+    }
+  },
+  "llm_calls": 3,
+  "input_tokens": 4424,
+  "output_tokens": 242
+}

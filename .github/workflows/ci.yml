@@ -16,7 +16,8 @@ jobs:
         run: uv run ruff check . && uv run ruff format --check .
       - name: Types
         run: uv run mypy
-      - name: Unit and target-app tests (no API key needed)
-        run: uv run pytest
       - name: Browser for surface tests
         run: uv run playwright install --with-deps chromium
+      - name: Unit and target-app tests (no API key needed)
+        run: uv run pytest
+      

@@ -1,0 +1,17 @@
+{"seq": 1, "t_ms": 0, "ts": "2026-10-02T16:25:43.718+00:00", "kind": "replay_started", "capability": "lookup_savings_balance@1.1.0", "status": "approved", "tenant": "tenant-a", "caller": "cli:utkarshmittal", "on_behalf_of": null, "attended": false, "inputs": {"member_id": "[identifier:32f69e84]"}}
+{"seq": 2, "t_ms": 1069, "ts": "2026-10-02T16:25:44.788+00:00", "kind": "step_ok", "step": "open_login", "action": "navigate"}
+{"seq": 3, "t_ms": 1175, "ts": "2026-10-02T16:25:44.894+00:00", "kind": "step_ok", "step": "enter_user_id", "action": "fill"}
+{"seq": 4, "t_ms": 1253, "ts": "2026-10-02T16:25:44.972+00:00", "kind": "step_ok", "step": "enter_password", "action": "fill"}
+{"seq": 5, "t_ms": 1498, "ts": "2026-10-02T16:25:45.216+00:00", "kind": "step_ok", "step": "submit_sign_on", "action": "click"}
+{"seq": 6, "t_ms": 1504, "ts": "2026-10-02T16:25:45.223+00:00", "kind": "login_ok", "login": "login@1.0.0"}
+{"seq": 7, "t_ms": 1689, "ts": "2026-10-02T16:25:45.408+00:00", "kind": "step_ok", "step": "open_search", "action": "navigate"}
+{"seq": 8, "t_ms": 1773, "ts": "2026-10-02T16:25:45.491+00:00", "kind": "step_ok", "step": "enter_member_id", "action": "fill"}
+{"seq": 9, "t_ms": 2196, "ts": "2026-10-02T16:25:45.915+00:00", "kind": "screenshot", "path": "screenshots/01-handoff-stuck.png"}
+{"seq": 10, "t_ms": 2196, "ts": "2026-10-02T16:25:45.915+00:00", "kind": "intervention_opened", "id": "int_20261002T162545_965ee5", "intervention_kind": "stuck", "step": "click_search", "reason": "security_update_prompt: Security update prompt must be handled by a person."}
+{"seq": 11, "t_ms": 25959, "ts": "2026-10-02T16:26:09.678+00:00", "kind": "intervention_claimed", "id": "int_20261002T162545_965ee5", "operator": "ops.alex"}
+{"seq": 12, "t_ms": 43034, "ts": "2026-10-02T16:26:26.753+00:00", "kind": "operator_decision", "id": "int_20261002T162545_965ee5", "action": "resume", "operator": "ops.alex"}
+{"seq": 13, "t_ms": 43059, "ts": "2026-10-02T16:26:26.778+00:00", "kind": "intervention_resolved", "id": "int_20261002T162545_965ee5", "action": "resume"}
+{"seq": 14, "t_ms": 43070, "ts": "2026-10-02T16:26:26.789+00:00", "kind": "step_ok", "step": "click_search", "action": "click"}
+{"seq": 15, "t_ms": 43088, "ts": "2026-10-02T16:26:26.807+00:00", "kind": "step_ok", "step": "read_member_name", "action": "extract"}
+{"seq": 16, "t_ms": 43105, "ts": "2026-10-02T16:26:26.824+00:00", "kind": "step_ok", "step": "read_savings_balance", "action": "extract"}
+{"seq": 17, "t_ms": 43138, "ts": "2026-10-02T16:26:26.857+00:00", "kind": "replay_finished", "result": "success", "code": null, "at_step": null}

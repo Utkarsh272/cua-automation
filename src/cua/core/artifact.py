@@ -90,7 +90,7 @@ class ActionKind(StrEnum):
     EXTRACT = "extract"
 
 
-Parser = Literal["text", "currency_usd", "integer", "date_mdy"]
+Parser = Literal["text", "currency_usd", "number", "integer", "date_mdy"]
 
 
 # --- contract ---------------------------------------------------------------------------------

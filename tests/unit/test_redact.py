@@ -115,3 +115,17 @@ def test_sensitive_keys_are_whole_names_not_substrings() -> None:
     assert {out[k] for k in ("access_token", "Set-Cookie", "api_key", "password")} == {
         "[REDACTED:secret]"
     }
+
+
+def test_known_values_match_in_any_case() -> None:
+    r = Redactor.for_run({}, {}, secrets=["svc_automation"])
+    assert r.redact_text("Your user profile (SVC_AUTOMATION) is not") == (
+        "Your user profile ([REDACTED:secret]) is not"
+    )
+
+
+def test_a_known_number_is_not_masked_inside_a_longer_number() -> None:
+    r = Redactor.for_run({"initial_deposit": "financial"}, {"initial_deposit": "250.00"})
+    out = r.redact({"t_ms": 102509, "input_tokens": 2250, "text": "Deposit $250.00 of 250"})
+    assert out["t_ms"] == 102509 and out["input_tokens"] == 2250
+    assert "250" not in out["text"]

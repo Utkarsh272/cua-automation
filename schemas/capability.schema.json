@@ -1121,6 +1121,7 @@
               "enum": [
                 "text",
                 "currency_usd",
+                "number",
                 "integer",
                 "date_mdy"
               ],

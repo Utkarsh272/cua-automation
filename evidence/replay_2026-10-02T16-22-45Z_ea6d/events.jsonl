@@ -1,0 +1,12 @@
+{"seq": 1, "t_ms": 0, "ts": "2026-10-02T16:22:45.279+00:00", "kind": "replay_started", "capability": "lookup_savings_balance@1.1.0", "status": "approved", "tenant": "tenant-a", "caller": "cli:utkarshmittal", "on_behalf_of": null, "attended": false, "inputs": {"member_id": "[identifier:32f69e84]"}}
+{"seq": 2, "t_ms": 441, "ts": "2026-10-02T16:22:45.721+00:00", "kind": "step_ok", "step": "open_login", "action": "navigate"}
+{"seq": 3, "t_ms": 530, "ts": "2026-10-02T16:22:45.810+00:00", "kind": "step_ok", "step": "enter_user_id", "action": "fill"}
+{"seq": 4, "t_ms": 633, "ts": "2026-10-02T16:22:45.912+00:00", "kind": "step_ok", "step": "enter_password", "action": "fill"}
+{"seq": 5, "t_ms": 862, "ts": "2026-10-02T16:22:46.142+00:00", "kind": "step_ok", "step": "submit_sign_on", "action": "click"}
+{"seq": 6, "t_ms": 867, "ts": "2026-10-02T16:22:46.146+00:00", "kind": "login_ok", "login": "login@1.0.0"}
+{"seq": 7, "t_ms": 1049, "ts": "2026-10-02T16:22:46.328+00:00", "kind": "step_ok", "step": "open_search", "action": "navigate"}
+{"seq": 8, "t_ms": 1133, "ts": "2026-10-02T16:22:46.412+00:00", "kind": "step_ok", "step": "enter_member_id", "action": "fill"}
+{"seq": 9, "t_ms": 1354, "ts": "2026-10-02T16:22:46.634+00:00", "kind": "step_ok", "step": "click_search", "action": "click"}
+{"seq": 10, "t_ms": 1378, "ts": "2026-10-02T16:22:46.657+00:00", "kind": "step_ok", "step": "read_member_name", "action": "extract"}
+{"seq": 11, "t_ms": 1395, "ts": "2026-10-02T16:22:46.674+00:00", "kind": "step_ok", "step": "read_savings_balance", "action": "extract"}
+{"seq": 12, "t_ms": 1404, "ts": "2026-10-02T16:22:46.683+00:00", "kind": "replay_finished", "result": "success", "code": null, "at_step": null}

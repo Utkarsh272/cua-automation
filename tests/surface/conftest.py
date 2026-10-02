@@ -99,7 +99,10 @@ def login_cap() -> Capability:
 
 @pytest.fixture(scope="session")
 def lookup_cap() -> Capability:
-    return load_capability(ROOT / "capabilities" / "lookup_savings_balance" / "1.0.0.yaml")
+    """The hand-written reference: it uses every schema feature (recoveries, overrides...)."""
+    return load_capability(
+        ROOT / "tests" / "fixtures" / "reference" / "lookup_savings_balance.hand_written.yaml"
+    )
 
 
 def guard_for(*urls: str) -> PolicyGuard:

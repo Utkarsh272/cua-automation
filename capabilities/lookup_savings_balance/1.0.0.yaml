@@ -1,17 +1,23 @@
-# HAND-WRITTEN REFERENCE (Day 2). The real 1.0.0 will be compiled from a genuine discovery run
-# on Day 4-5 and diffed against this file. It stays a draft until then.
+# lookup_savings_balance 1.0.0, compiled by `cua compile` from discovery run discovery_2026-10-01T16-28-20Z_eb11
+# (model groq/openai/gpt-oss-120b). Behavior hash: sha256:4cbb88c2f1165874a56fdf11d598987992d7afe5a8d7b8dc20ef94af5a24ea7c
+# Drafts are reviewed (see the matching .review.md), may be edited, then `cua approve`d.
 schema_version: 1
 id: lookup_savings_balance
 version: 1.0.0
-status: draft
-recorded_by: utkarsh.mittal
+content_hash: sha256:4cbb88c2f1165874a56fdf11d598987992d7afe5a8d7b8dc20ef94af5a24ea7c
+status: approved
+recorded_by: discovery:groq/openai/gpt-oss-120b
+approved_by: utkarsh.mittal
+approved_at: '2026-10-01T17:29:09+00:00'
 provenance:
-  origin: hand_written
+  origin: discovery
+  recorded_from_run: discovery_2026-10-01T16-28-20Z_eb11
+  model: groq/openai/gpt-oss-120b
   recorded_on_tenant: tenant-a
-  notes: Reference used to design the schema against the real CU Core markup.
-app:
-  product: cu-core
-  versions: ">=4.2 <5"
+  recorded_at: '2026-10-01T16:28:20.948426Z'
+  notes: 'Compiled from 3 discovery run(s): discovery_2026-10-01T16-28-20Z_eb11, discovery_2026-10-01T17-23-30Z_f4d4,
+    discovery_2026-10-01T17-23-48Z_cd2e'
+app: {product: cu-core, versions: '>=4.6 <5'}
 
 description: Look up a credit union member by member ID and return their name and current savings balance.
 risk: read
@@ -23,161 +29,122 @@ inputs:
   properties:
     member_id:
       type: string
-      pattern: "^[0-9]{5}$"
       description: Five-digit member ID.
       x-sensitivity: identifier
-
+      pattern: ^[0-9]{5}$
+  additionalProperties: false
 outputs:
   type: object
-  required: [savings_balance]
+  required: [member_name, savings_balance]
   properties:
     member_name:
       type: string
+      description: Member's full name as shown on the member record.
       x-sensitivity: pii
     savings_balance:
       type: number
-      description: Current savings balance in USD.
+      description: Current savings account balance in USD.
       x-sensitivity: financial
+  additionalProperties: false
 
 outcomes:
-  - code: MEMBER_NOT_FOUND
-    description: No member exists with this ID.
-  - code: ACCESS_DENIED
-    description: The service account may not view this member (restricted record).
-  - code: NO_SAVINGS_ACCOUNT
-    description: The member exists but has no savings account.
-
+- {code: MEMBER_NOT_FOUND, description: No member exists with this ID.}
+- code: ACCESS_DENIED
+  description: The service account may not view this member (restricted record).
+- {code: NO_SAVINGS_ACCOUNT, description: The member exists but has no savings account.}
 requires: [login@^1]
 
 steps:
-  - id: open_search
-    action: navigate
-    frame: [{ name: main }]
-    route: /search
-    postcondition: { title_contains: "Member Search" }
-
-  - id: enter_member_id
-    action: fill
-    value: "{{inputs.member_id}}"
-    target:
-      description: Member ID text box on the Find Member form
-      frame: [{ name: main }]
-      strategies:
-        # No accessible name exists (label is in the neighbouring cell), so role+name is useless.
-        - { by: label, text: "Member ID", control: textbox }
-        - { by: attribute, attr: name, value: "ctl00$main$txtMid", tag: input }
-      fingerprint:
-        tag: input
-        role: textbox
-        near_text: "Member ID:"
-        row_context: ["Member ID:", ""]
-        attributes: { name: "ctl00$main$txtMid", type: text }
-
-  - id: submit_search
-    action: click
-    target:
-      description: Search button of the Find Member form (not the quick-find Search in the header)
-      frame: [{ name: main }]
-      strategies:
-        # Two buttons are named "Search"; near_text picks the one inside the Find Member form.
-        - { by: role, role: button, name: "Search", near_text: "Find Member" }
-        - { by: attribute, attr: name, value: "ctl00$main$btnSearch", tag: input }
-    wait:
-      until:
-        any_of:
-          - { title_contains: "Member Detail" }
-          - { detector: member_not_found }
-          - { detector: access_denied }
-          - { detector: system_notice }
-      timeout_ms: 8000
-
-  - id: read_member_name
-    action: extract
-    output: member_name
-    parse: text
-    target:
-      description: Value next to "Name" in Member Information
-      frame: [{ name: main }]
-      strategies:
-        - { by: label, text: "Name", control: value_cell }
-
-  - id: read_savings_balance
-    action: extract
-    output: savings_balance
-    parse: currency_usd
-    target:
-      description: Balance column of the Savings row in the Accounts table
-      frame: [{ name: main }]
-      strategies:
-        - { by: table_cell, table_near: "Accounts", row_match: "Savings", column: "Balance" }
+- id: open_search
+  action: navigate
+  description: Start at /search (already signed on)
+  frame:
+  - {name: main}
+  route: /search
+  postcondition: {title_contains: CU Core - Member Search}
+- id: enter_member_id
+  action: fill
+  target:
+    description: Member ID text box
+    frame:
+    - {name: main}
+    strategies:
+    - {by: label, text: Member ID, control: textbox}
+    - {by: attribute, attr: name, value: ctl00$main$txtMid, tag: input}
+    fingerprint:
+      tag: input
+      role: textbox
+      near_text: Member ID
+      row_context: ['Member ID:']
+      attributes: {name: ctl00$main$txtMid, type: text}
+      bbox: [325, 128, 93, 21]
+  value: '{{inputs.member_id}}'
+- id: click_search
+  action: click
+  target:
+    description: Search button
+    frame:
+    - {name: main}
+    strategies:
+    - {by: role, role: button, name: Search, near_text: Find Member}
+    - {by: attribute, attr: name, value: ctl00$main$btnSearch, tag: input}
+    fingerprint:
+      tag: input
+      role: button
+      name: Search
+      attributes: {name: ctl00$main$btnSearch, type: submit}
+      bbox: [325, 159, 58, 21]
+  wait:
+    until:
+      any_of:
+      - {title_contains: CU Core - Member Detail}
+      - {detector: member_not_found}
+      - {detector: access_denied}
+    timeout_ms: 8000
+- id: read_member_name
+  action: extract
+  target:
+    description: value next to 'Name'
+    frame:
+    - {name: main}
+    strategies:
+    - {by: label, text: Name, control: value_cell}
+    fingerprint:
+      tag: td
+      role: cell
+      near_text: Name
+      row_context: ['Name:', 'Phone:']
+      bbox: [319, 148, 107, 25]
+  output: member_name
+  parse: text
+- id: read_savings_balance
+  action: extract
+  target:
+    description: Balance of the 'Savings' row in the 'Accounts' table
+    frame:
+    - {name: main}
+    strategies:
+    - {by: table_cell, table_near: Accounts, row_match: Savings, column: Balance}
+    fingerprint:
+      tag: td
+      role: cell
+      row_context: [Savings, Open]
+      bbox: [555, 282, 85, 25]
+  output: savings_balance
+  parse: currency_usd
 
 detectors:
-  - id: member_not_found
-    when: { text_visible: "No member found for the ID entered" }
-    then: { outcome: MEMBER_NOT_FOUND }
-
-  - id: access_denied
-    when: { title_contains: "Access Denied" }
-    then: { outcome: ACCESS_DENIED }
-
-  - id: no_savings_account
-    when:
-      all_of:
-        - { title_contains: "Member Detail" }
-        - not:
-            element:
-              description: Savings row in the Accounts table
-              frame: [{ name: main }]
-              strategies:
-                - { by: table_cell, table_near: "Accounts", row_match: "Savings", column: "Account" }
-    then: { outcome: NO_SAVINGS_ACCOUNT }
-
-  - id: system_notice
-    when: { dialog_title: "System Notice" }
-    then:
-      recover: click
-      max: 2
-      target:
-        description: Acknowledge button on the System Notice
-        frame: [{ name: main }]
-        strategies:
-          - { by: role, role: button, name: "Acknowledge" }
+- id: member_not_found
+  when: {text_visible: No member found for the ID entered.}
+  then: {outcome: MEMBER_NOT_FOUND}
+- id: access_denied
+  when:
+    text_visible: Access Denied. Your user profile (SVC_AUTOMATION) is not authorized to view restricted 
+      member records.
+  then: {outcome: ACCESS_DENIED}
 
 success:
   all_of:
-    - { title_contains: "Member Detail" }
-    - { output_present: savings_balance }
-
-# Tenant B runs CU Core 4.7.0 with relabeled fields and a privacy acknowledgement.
-# Applied at resolution time (Day 8); declared here so it is reviewed with the artifact.
-overrides:
-  tenant-b:
-    - op: set
-      path: steps.enter_member_id.target.strategies[0].text
-      value: "Member #"
-    - op: insert_step
-      after: enter_member_id
-      step:
-        id: acknowledge_privacy_notice
-        action: check
-        target:
-          description: Privacy acknowledgement checkbox under the member number
-          frame: [{ name: main }]
-          strategies:
-            # The text sits after the checkbox in the same cell, with no <label>.
-            - { by: label, text: "I acknowledge the member privacy notice", control: checkbox }
-            - { by: attribute, attr: name, value: "ctl00$main$chkAck", tag: input }
-    - op: set
-      path: steps.read_savings_balance.target.strategies[0].row_match
-      value: "Share Savings"
-    - op: set
-      path: detectors.no_savings_account.when
-      value:
-        all_of:
-          - { title_contains: "Member Detail" }
-          - not:
-              element:
-                description: Share Savings row in the Accounts table
-                frame: [{ name: main }]
-                strategies:
-                  - { by: table_cell, table_near: "Accounts", row_match: "Share Savings", column: "Account" }
+  - {title_contains: CU Core - Member Detail}
+  - {output_present: member_name}
+  - {output_present: savings_balance}

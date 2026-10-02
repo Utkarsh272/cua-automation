@@ -6,7 +6,10 @@ Stop conditions:
   was re-read through its *proposed locator* and matched. A run whose locators do not replay
   is not a success.
 * ``business_outcome``: the model declared a business result, quoting text actually on the page.
-* ``escalated``: the model asked for a human, or policy said an action needs one.
+* ``escalated``: the model asked for a human, or policy said an action needs one, and no
+  operator console is attached. With a handoff attached the run *pauses* instead: an operator
+  approves the action (automation performs it with a single-use token issued to them), does it
+  by hand, or aborts. Either way the step is recorded with who did or approved it.
 * ``failed``: dead end (three actions with no page change), repeating the same action, three
   invalid tool calls in a row, or an unrecoverable error.
 * ``budget_exhausted``: step or wall-clock budget spent.
@@ -23,12 +26,15 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from functools import partial
 from typing import Any
 from urllib.parse import urljoin
 
 from playwright.sync_api import Error as PlaywrightError
 
 from cua.core.artifact import ActionKind, PropertySchema, RiskClass
+from cua.core.confirmation import Confirmation
+from cua.core.lease import ControlLease
 from cua.core.parse import ParseError, parse_value
 from cua.core.policy import WRITE_SCOPE, PolicyDecision, PolicyGuard, ProposedAction
 from cua.core.redact import Redactor
@@ -37,8 +43,10 @@ from cua.core.targets import Fingerprint, TargetSpec
 from cua.core.templating import TEMPLATE, TemplateError, render
 from cua.core.text import contains
 from cua.evidence.store import RunEvidence
+from cua.handoff.session import Decision, Handoff
+from cua.handoff.store import Kind
 from cua.llm.base import LLMClient, LLMError, LLMResponse, ToolCall
-from cua.surface.base import Observation, ObservedElement, ResolutionError
+from cua.surface.base import Observation, ObservedElement, Resolution, ResolutionError
 from cua.surface.web import NavigationBlocked, WebSurface
 
 from . import prompts
@@ -77,11 +85,6 @@ def parser_for(prop: PropertySchema, raw: str) -> str:
 
 
 def parse_output(parser: str, raw: str) -> Any:
-    if parser == "number":
-        try:
-            return float(raw.strip())
-        except ValueError as exc:
-            raise ParseError(f"not a number: {raw!r}") from exc
     return parse_value(parser, raw)
 
 
@@ -129,7 +132,12 @@ class DiscoveryAgent:
         llm_redactor: Redactor,
         include_screenshot: bool = False,
         clock: Callable[[], float] = time.monotonic,
+        handoff: Handoff | None = None,
     ) -> None:
+        self.handoff = handoff
+        self.lease = ControlLease()
+        self._token = self.lease.token()
+        surface.gate = lambda: self.lease.check(self._token)
         self.surface = surface
         self.llm = llm
         self.spec = spec
@@ -140,7 +148,7 @@ class DiscoveryAgent:
         self.include_screenshot = include_screenshot and llm.supports_images
         self.clock = clock
         self.scopes = scopes_for(spec.risk_ceiling)
-        self.contract = prompts.contract_lines(spec.inputs, spec.outputs)
+        self.contract = prompts.contract_lines(spec.inputs, spec.outputs, spec.outcomes)
         self._t0 = clock()
 
     # --- helpers ----------------------------------------------------------------------------
@@ -158,7 +166,6 @@ class DiscoveryAgent:
         self.trace.status = status  # type: ignore[assignment]
         self.trace.reason = reason
         self.trace.finished_at = datetime.now(UTC)
-        self.ev.event("run_finished", status=status, reason=reason)
         return self.trace
 
     def _policy(self, action: ProposedAction) -> PolicyDecision:
@@ -167,6 +174,12 @@ class DiscoveryAgent:
     # --- the loop ---------------------------------------------------------------------------
 
     def run(self) -> DiscoveryTrace:
+        trace = self._loop()
+        # Logged here, after the last step's event, so the timeline reads in order.
+        self.ev.event("run_finished", status=trace.status, reason=trace.reason)
+        return trace
+
+    def _loop(self) -> DiscoveryTrace:
         s = _State()
         for turn in range(1, self.spec.max_steps + 1):
             if self.clock() - self._t0 > self.spec.max_minutes * 60:
@@ -309,8 +322,25 @@ class DiscoveryAgent:
             return None
 
         if name == "escalate":
-            step.status = "escalated"
-            return self._finish("escalated", str(args.get("reason", "model asked for a human")))
+            reason = str(args.get("reason", "model asked for a human"))
+            if self.handoff is None:
+                step.status = "escalated"
+                return self._finish("escalated", reason)
+            d = self._pause(
+                step,
+                kind="stuck",
+                what="the agent asked for help",
+                reason=reason,
+                expects="The page is ready for the agent to continue.",
+                check=lambda _d: None,
+            )
+            if isinstance(d, DiscoveryTrace):
+                return d
+            step.status = "ok"
+            did = "; ".join(self._say(a) for a in d.human_actions) or "nothing in the window"
+            s.last_result = f"A human operator stepped in ({did}). Look at the page and continue."
+            s.log.append(f"{step.index}. escalate -> operator {d.operator} stepped in ({did})")
+            return None
 
         if name == "done":
             missing = self._missing(s)
@@ -356,6 +386,8 @@ class DiscoveryAgent:
             tag=el.tag,
             row=el.row,
             column=el.column,
+            context=el.context,
+            dialog=el.dialog,
             frame=el.frame,
         )
         what = _describe(el)
@@ -376,6 +408,32 @@ class DiscoveryAgent:
             if TEMPLATE.search(value) is None and self.llm_redactor.redact_text(value) != value:
                 self._invalid(step, s, "that looks like sensitive data; use an input placeholder")
                 return None
+        elif name == "select":
+            option = str(args.get("option", ""))
+            try:
+                real_option = render(option, self.spec.example_inputs)
+            except TemplateError as exc:
+                self._invalid(step, s, f"bad placeholder: {exc}")
+                return None
+            if "[REDACTED" in option:
+                # The model only sees redacted option text. If one of the inputs identifies the
+                # option, it must say so with the placeholder (so the capability is reusable);
+                # otherwise map its choice back, but only if exactly one option matches.
+                shown = [o for o in el.options if self.llm_redactor.redact_text(o) == option]
+                real_option = shown[0] if len(shown) == 1 else option
+                names = [
+                    k
+                    for k, v in self.spec.example_inputs.items()
+                    if str(v) and str(v) in real_option
+                ]
+                if names:
+                    self._invalid(
+                        step,
+                        s,
+                        "that option holds input data; pass the placeholder "
+                        f"{{{{inputs.{names[0]}}}}} as the option instead",
+                    )
+                    return None
 
         # Propose a durable locator *before* acting: after a click the element may be gone.
         try:
@@ -398,9 +456,80 @@ class DiscoveryAgent:
         step.policy = PolicyRecord(
             verdict=decision.verdict, effective_risk=decision.effective_risk, reason=decision.reason
         )
+        obs_res: Resolution | None = None
         if decision.verdict == "escalate":
-            step.status = "escalated"
-            return self._finish("escalated", f"{what}: {decision.reason}")
+            if self.handoff is None:
+                step.status = "escalated"
+                return self._finish("escalated", f"{what}: {decision.reason}")
+            before = _signature(obs)
+            target = step.target
+
+            def check(d: Decision) -> str | None:
+                if d.action == "step_done":
+                    same = _signature(self.surface.observe()) == before
+                    return "the page has not changed; the step does not look done" if same else None
+                if target is not None and self.surface.count(target) != 1:
+                    return f"{what} is no longer on the page"
+                return None
+
+            d = self._pause(
+                step,
+                kind="confirmation",
+                what=what,
+                reason=f"{name} {what}: {decision.reason}",
+                expects=(
+                    "Approve: the page is unchanged and the agent performs this action. "
+                    "Did it yourself: the page has moved on."
+                ),
+                check=check,
+            )
+            if isinstance(d, DiscoveryTrace):
+                return d
+            if d.action == "step_done":
+                step.actor = f"human:{d.operator}"
+                step.after = self._page()
+                step.status = "ok"
+                s.log.append(
+                    f"{step.index}. {name} ({what}) -> done by a human operator; "
+                    f"page now {step.after.route} {step.after.title!r}"
+                )
+                s.last_result = (
+                    f"OK: a human operator performed this step; page now {step.after.title!r}"
+                )
+                return None
+            tokens = self.guard.tokens
+            if tokens is None:
+                step.status = "escalated"
+                return self._finish("escalated", "approved, but no confirmation secret is set")
+            sid = f"turn{step.index}"
+            run_id, inputs = self.trace.run_id, self.spec.example_inputs
+            token = tokens.issue(
+                run_id=run_id, step_id=sid, inputs=inputs, issued_to=d.operator or "?"
+            )
+            decision = self.guard.evaluate(
+                ProposedAction(
+                    kind=ActionKind(name),
+                    url=self.surface.content_url,
+                    control_name=el.name or el.label,
+                    step_id=sid,
+                ),
+                scopes=self.scopes,
+                confirmation=Confirmation(token, run_id, sid, inputs),
+            )
+            step.policy = PolicyRecord(
+                verdict=decision.verdict,
+                effective_risk=decision.effective_risk,
+                reason=decision.reason,
+            )
+            if decision.verdict != "allow":
+                step.status = "denied"
+                return self._finish("failed", f"approval was not accepted: {decision.reason}")
+            step.approved_by = decision.confirmed_by
+            # The pause invalidated the observation's element handles; resolve the control again.
+            if target is None:
+                step.status = "error"
+                return self._finish("failed", f"{what} has no unique locator to act on")
+            obs_res = self.surface.resolve(target)
         if decision.verdict == "deny":
             step.status = "denied"
             s.last_result = f"DENIED by policy: {decision.reason}. Choose a different action."
@@ -408,7 +537,7 @@ class DiscoveryAgent:
             return None
 
         blocked_before = len(self.surface.blocked)
-        res = self.surface.resolution_for_ref(ref)
+        res = obs_res or self.surface.resolution_for_ref(ref)
         try:
             if name == "extract":
                 assert step.output is not None
@@ -432,7 +561,7 @@ class DiscoveryAgent:
             elif name == "fill":
                 self.surface.act(res, "fill", render(str(args["value"]), self.spec.example_inputs))
             elif name == "select":
-                self.surface.act(res, "select", self._real_option(el, str(args.get("option", ""))))
+                self.surface.act(res, "select", real_option)
             elif name == "press":
                 self.surface.act(res, "press", str(args.get("key", "Enter")))
             elif name == "check":
@@ -464,13 +593,56 @@ class DiscoveryAgent:
         s.last_result = f"OK: {detail}"
         return None
 
-    def _real_option(self, el: ObservedElement, shown: str) -> str:
-        """The model only sees redacted option text ('Checking - [REDACTED:account_number]').
-        Map its choice back to the real option, but only if exactly one option matches."""
-        if shown in el.options:
-            return shown
-        matches = [o for o in el.options if self.llm_redactor.redact_text(o) == shown]
-        return matches[0] if len(matches) == 1 else shown
+    # --- human in the loop ------------------------------------------------------------------
+
+    @staticmethod
+    def _say(action: dict[str, Any]) -> str:
+        name = action.get("label") or action.get("name")
+        return f"{action.get('event')} {action.get('role')} {name!r}"
+
+    def _pause(
+        self,
+        step: TraceStep,
+        *,
+        kind: Kind,
+        what: str,
+        reason: str,
+        expects: str,
+        check: Callable[[Decision], str | None],
+    ) -> Decision | DiscoveryTrace:
+        """Hand the live session to an operator. Returns their decision once the page passes
+        ``check``, or the finished trace if they aborted or nobody came."""
+        assert self.handoff is not None
+        existing = None
+        while True:
+            d = self.handoff.request(
+                surface=self.surface,
+                lease=self.lease,
+                evidence=self.ev,
+                kind=kind,
+                run_id=self.trace.run_id,
+                mode="discovery",
+                capability=self.spec.capability_id,
+                tenant=self.spec.tenant,
+                step=f"turn{step.index}",
+                step_description=what,
+                reason=reason,
+                expects_on_return=expects,
+                existing=existing,
+            )
+            step.intervention = d.intervention.id
+            step.human_actions = [self.ev.redactor.redact(a) for a in d.human_actions]
+            if d.action in ("abort", "timeout"):
+                step.status = "escalated"
+                why = "aborted by the operator" if d.action == "abort" else "no operator in time"
+                return self._finish("escalated", f"{reason} ({why})")
+            if self.handoff.verify_and_resume(d, self.lease, self.ev, partial(check, d)):
+                self._token = self.lease.token()
+                return d
+            if self.lease.holder == "aborted":
+                step.status = "escalated"
+                return self._finish("escalated", f"{reason} (hand-back checks kept failing)")
+            existing = d.intervention
 
     def _navigate(self, route: str, step: TraceStep, s: _State) -> DiscoveryTrace | None:
         if not route.startswith("/") or route.startswith("//"):

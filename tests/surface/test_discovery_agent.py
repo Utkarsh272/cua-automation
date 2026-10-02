@@ -154,6 +154,7 @@ def test_successful_discovery_produces_verified_compiler_ready_trace(
         json.loads(line)["kind"] for line in (run_dir / "events.jsonl").read_text().splitlines()
     ]
     assert kinds[0] == "run_started" and "login_ok" in kinds and kinds.count("llm_decision") == 5
+    assert kinds[-3:] == ["step", "run_finished", "screenshot"]  # finished after the last step
 
 
 # --- business outcomes need proof from the page -----------------------------------------------

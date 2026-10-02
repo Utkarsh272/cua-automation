@@ -202,7 +202,7 @@
   };
 
   // Modal detection: ARIA dialogs, <dialog open>, and fixed overlays covering most of the view.
-  const dialogs = () => {
+  const dialogContainers = () => {
     const found = [];
     for (const el of document.querySelectorAll('[role="dialog"], [role="alertdialog"], dialog[open]')) {
       if (visible(el)) found.push(el);
@@ -214,12 +214,21 @@
       const r = el.getBoundingClientRect();
       if (r.width * r.height >= 0.4 * area && text(el)) found.push(el);
     }
-    const outer = found.filter((e) => !found.some((o) => o !== e && o.contains(e)));
-    return outer.map((el) => {
-      const t = el.querySelector(
-        '[class*="title" i], h1, h2, h3, h4, [role="heading"], legend, strong, b'
-      );
-      const title = t ? text(t) : text(el).split("\n")[0];
+    return found.filter((e) => !found.some((o) => o !== e && o.contains(e)));
+  };
+  const dialogTitle = (el) => {
+    const t = el.querySelector(
+      '[class*="title" i], h1, h2, h3, h4, [role="heading"], legend, strong, b'
+    );
+    return t ? text(t) : text(el).split("\n")[0];
+  };
+  const dialogOf = (el) => {
+    const box = dialogContainers().find((d) => d.contains(el));
+    return box ? dialogTitle(box) : "";
+  };
+  const dialogs = () => {
+    return dialogContainers().map((el) => {
+      const title = dialogTitle(el);
       const buttons = controls(el)
         .filter((c) => kindOf(c) === "button" && visible(c))
         .map(nameOf);
@@ -273,6 +282,7 @@
       row: rowTexts(el),
       column,
       context: kind === "cell" ? "" : suggestContext(el).nearTitle,
+      dialog: dialogOf(el),
       disabled: !!el.disabled,
       sensitive: el.tagName === "INPUT" && (el.type || "").toLowerCase() === "password",
       attrs: {
@@ -363,9 +373,17 @@
     return out;
   };
 
+  // Application messages: alert roles and the usual error/message classes, outermost only.
+  const alerts = () => {
+    const els = [...document.querySelectorAll(
+      '[role="alert"], [class*="error" i], [class*="msg" i], .err, .warn'
+    )].filter((e) => visible(e) && text(e));
+    return els.filter((e) => !els.some((o) => o !== e && o.contains(e))).map(text).slice(0, 5);
+  };
+
   window.__cua = {
     norm, visible, kindOf, labelsOf, nameOf,
     byLabel, byTableCell, byAttribute, byText, byCss, nearDepth,
-    pageInfo, dialogs, observe, describe, suggestContext, readValue, maskTargets,
+    pageInfo, dialogs, observe, alerts, describe, suggestContext, readValue, maskTargets,
   };
 })();

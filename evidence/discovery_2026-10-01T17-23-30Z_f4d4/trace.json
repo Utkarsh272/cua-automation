@@ -1,0 +1,326 @@
+{
+  "schema_version": 1,
+  "run_id": "discovery_2026-10-01T17-23-30Z_f4d4",
+  "capability_id": "lookup_savings_balance",
+  "description": "Look up a credit union member by member ID and return their name and current savings balance.",
+  "goal": "Find the member whose member ID is {{inputs.member_id}} and read their full name and the current balance of their savings account.\n",
+  "tenant": "tenant-a",
+  "app_product": "cu-core",
+  "app_version": "4.6.2",
+  "login": "login@1.0.0",
+  "provider": "groq",
+  "model": "openai/gpt-oss-120b",
+  "started_at": "2026-10-01T17:23:30.374329Z",
+  "finished_at": "2026-10-01T17:23:33.744098Z",
+  "status": "business_outcome",
+  "reason": "MEMBER_NOT_FOUND: No member found for the ID entered.",
+  "risk_ceiling": "read",
+  "inputs": {
+    "type": "object",
+    "required": [
+      "member_id"
+    ],
+    "properties": {
+      "member_id": {
+        "type": "string",
+        "description": "Five-digit member ID.",
+        "sensitivity": "identifier",
+        "pattern": "^[0-9]{5}$"
+      }
+    },
+    "additionalProperties": false
+  },
+  "outputs": {
+    "type": "object",
+    "required": [
+      "member_name",
+      "savings_balance"
+    ],
+    "properties": {
+      "member_name": {
+        "type": "string",
+        "description": "Member's full name as shown on the member record.",
+        "sensitivity": "pii"
+      },
+      "savings_balance": {
+        "type": "number",
+        "description": "Current savings account balance in USD.",
+        "sensitivity": "financial"
+      }
+    },
+    "additionalProperties": false
+  },
+  "declared_outcomes": [
+    {
+      "code": "MEMBER_NOT_FOUND",
+      "description": "No member exists with this ID."
+    },
+    {
+      "code": "ACCESS_DENIED",
+      "description": "The service account may not view this member (restricted record)."
+    },
+    {
+      "code": "NO_SAVINGS_ACCOUNT",
+      "description": "The member exists but has no savings account."
+    }
+  ],
+  "subject": "inputs.member_id",
+  "start_route": "/search",
+  "steps": [
+    {
+      "index": 1,
+      "tool": "fill",
+      "args": {
+        "rationale": "Enter the provided member ID to locate the member record.",
+        "ref": "e7",
+        "value": "{{inputs.member_id}}"
+      },
+      "rationale": "Enter the provided member ID to locate the member record.",
+      "ref": "e7",
+      "element": {
+        "role": "textbox",
+        "label": "Member ID",
+        "name": "",
+        "tag": "input",
+        "row": [
+          "Member ID:",
+          ""
+        ],
+        "column": "",
+        "context": "Find Member",
+        "dialog": "",
+        "frame": [
+          {
+            "name": "main",
+            "url_contains": null
+          }
+        ]
+      },
+      "target": {
+        "description": "textbox 'Member ID' (lookup_savings_balance)",
+        "frame": [
+          {
+            "name": "main",
+            "url_contains": null
+          }
+        ],
+        "strategies": [
+          {
+            "by": "label",
+            "text": "Member ID",
+            "control": "textbox"
+          },
+          {
+            "by": "attribute",
+            "attr": "name",
+            "value": "ctl00$main$txtMid",
+            "tag": "input"
+          }
+        ],
+        "fingerprint": null
+      },
+      "target_note": null,
+      "fingerprint": {
+        "tag": "input",
+        "role": "textbox",
+        "name": null,
+        "near_text": "Member ID",
+        "row_context": [
+          "Member ID:",
+          ""
+        ],
+        "attributes": {
+          "name": "ctl00$main$txtMid",
+          "type": "text"
+        },
+        "bbox": [
+          325,
+          128,
+          97,
+          21
+        ]
+      },
+      "before": {
+        "route": "/search",
+        "title": "CU Core - Member Search"
+      },
+      "after": {
+        "route": "/search",
+        "title": "CU Core - Member Search"
+      },
+      "policy": {
+        "verdict": "allow",
+        "effective_risk": "read",
+        "reason": "read action"
+      },
+      "status": "ok",
+      "error": null,
+      "output": null,
+      "parser": null,
+      "value": null,
+      "llm": {
+        "provider": "groq",
+        "model": "openai/gpt-oss-120b",
+        "request_id": "chatcmpl-d02a4ab4-4e36-4102-bf7d-ac6a0c8aa863",
+        "input_tokens": 1434,
+        "output_tokens": 73,
+        "latency_ms": 565,
+        "retries": 0
+      },
+      "t_ms": 675
+    },
+    {
+      "index": 2,
+      "tool": "click",
+      "args": {
+        "rationale": "Submit the member ID search to locate the member record",
+        "ref": "e8"
+      },
+      "rationale": "Submit the member ID search to locate the member record",
+      "ref": "e8",
+      "element": {
+        "role": "button",
+        "label": "",
+        "name": "Search",
+        "tag": "input",
+        "row": [
+          "",
+          ""
+        ],
+        "column": "",
+        "context": "Find Member",
+        "dialog": "",
+        "frame": [
+          {
+            "name": "main",
+            "url_contains": null
+          }
+        ]
+      },
+      "target": {
+        "description": "button 'Search' (lookup_savings_balance)",
+        "frame": [
+          {
+            "name": "main",
+            "url_contains": null
+          }
+        ],
+        "strategies": [
+          {
+            "by": "role",
+            "role": "button",
+            "name": "Search",
+            "exact": true,
+            "near_text": "Find Member"
+          },
+          {
+            "by": "attribute",
+            "attr": "name",
+            "value": "ctl00$main$btnSearch",
+            "tag": "input"
+          }
+        ],
+        "fingerprint": null
+      },
+      "target_note": null,
+      "fingerprint": {
+        "tag": "input",
+        "role": "button",
+        "name": "Search",
+        "near_text": null,
+        "row_context": [
+          "",
+          ""
+        ],
+        "attributes": {
+          "name": "ctl00$main$btnSearch",
+          "type": "submit"
+        },
+        "bbox": [
+          325,
+          158,
+          58,
+          21
+        ]
+      },
+      "before": {
+        "route": "/search",
+        "title": "CU Core - Member Search"
+      },
+      "after": {
+        "route": "/search",
+        "title": "CU Core - Member Search"
+      },
+      "policy": {
+        "verdict": "allow",
+        "effective_risk": "read",
+        "reason": "read action"
+      },
+      "status": "ok",
+      "error": null,
+      "output": null,
+      "parser": null,
+      "value": null,
+      "llm": {
+        "provider": "groq",
+        "model": "openai/gpt-oss-120b",
+        "request_id": "chatcmpl-dc28cfdb-c53b-4a93-9220-25891aef91b3",
+        "input_tokens": 1477,
+        "output_tokens": 59,
+        "latency_ms": 526,
+        "retries": 0
+      },
+      "t_ms": 1387
+    },
+    {
+      "index": 3,
+      "tool": "declare_outcome",
+      "args": {
+        "code": "MEMBER_NOT_FOUND",
+        "evidence": "No member found for the ID entered.",
+        "rationale": "The page indicates the member ID does not exist, so declare outcome."
+      },
+      "rationale": "The page indicates the member ID does not exist, so declare outcome.",
+      "ref": null,
+      "element": null,
+      "target": null,
+      "target_note": null,
+      "fingerprint": null,
+      "before": {
+        "route": "/search",
+        "title": "CU Core - Member Search"
+      },
+      "after": null,
+      "policy": null,
+      "status": "ok",
+      "error": null,
+      "output": null,
+      "parser": null,
+      "value": null,
+      "llm": {
+        "provider": "groq",
+        "model": "openai/gpt-oss-120b",
+        "request_id": "chatcmpl-3ceb0bc3-5aea-4fc1-9f06-cc6181b5cfae",
+        "input_tokens": 1509,
+        "output_tokens": 87,
+        "latency_ms": 614,
+        "retries": 0
+      },
+      "t_ms": 2358
+    }
+  ],
+  "extracted": {},
+  "verified_outputs": {},
+  "outcome": {
+    "code": "MEMBER_NOT_FOUND",
+    "detail": "The page indicates the member ID does not exist, so declare outcome.",
+    "evidence_text": "No member found for the ID entered.",
+    "page": {
+      "route": "/search",
+      "title": "CU Core - Member Search"
+    }
+  },
+  "llm_calls": 3,
+  "input_tokens": 4420,
+  "output_tokens": 219
+}

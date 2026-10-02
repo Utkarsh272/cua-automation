@@ -70,6 +70,11 @@ def parse_value(parser: str | None, raw: str) -> str | int | float:
         return float(parse_currency_usd(raw))
     if parser == "integer":
         return parse_integer(raw)
+    if parser == "number":
+        text = clean_text(raw).replace(",", "")
+        if not re.fullmatch(r"-?\d+(\.\d+)?", text):
+            raise ParseError(f"not a number: {raw!r}")
+        return float(text)
     if parser == "date_mdy":
         return parse_date_mdy(raw)
     raise ParseError(f"unknown parser {parser!r}")

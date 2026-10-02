@@ -1,0 +1,6 @@
+# Who may take over a paused session. The token itself is never stored here: each operator's
+# token is read from the named environment variable (see .env.example).
+operators:
+  - id: ops.alex
+    tenants: [tenant-a, tenant-b]
+    token_env: CUA_OPERATOR_TOKEN

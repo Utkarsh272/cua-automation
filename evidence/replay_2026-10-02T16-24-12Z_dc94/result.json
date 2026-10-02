@@ -1,0 +1,15 @@
+{
+  "run_id": "replay_2026-10-02T16-24-12Z_dc94",
+  "capability": "open_sub_account",
+  "version": "1.0.0",
+  "tenant": "tenant-a",
+  "started_at": "2026-10-02T16:24:12.010914Z",
+  "duration_ms": 59067,
+  "llm_calls": 0,
+  "kind": "success",
+  "outputs": {
+    "new_account_number": "[identifier:4718ff15]"
+  },
+  "degraded": false,
+  "recoveries": []
+}

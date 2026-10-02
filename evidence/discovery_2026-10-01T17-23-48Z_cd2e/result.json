@@ -1,0 +1,22 @@
+{
+  "run_id": "discovery_2026-10-01T17-23-48Z_cd2e",
+  "status": "business_outcome",
+  "reason": "ACCESS_DENIED: Access Denied. Your user profile (SVC_AUTOMATION) is not authorized to view restricted member records.",
+  "provider": "groq",
+  "model": "openai/gpt-oss-120b",
+  "steps": 3,
+  "llm_calls": 3,
+  "input_tokens": 4424,
+  "output_tokens": 242,
+  "outputs": {},
+  "verified_outputs": {},
+  "outcome": {
+    "code": "ACCESS_DENIED",
+    "detail": "The page indicates the service account cannot view this member, so declare ACCESS_DENIED outcome.",
+    "evidence_text": "Access Denied. Your user profile (SVC_AUTOMATION) is not authorized to view restricted member records.",
+    "page": {
+      "route": "/member/[identifier:4456dab3]",
+      "title": "CU Core - Access Denied"
+    }
+  }
+}

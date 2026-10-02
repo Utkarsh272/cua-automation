@@ -1,0 +1,259 @@
+# open_sub_account 1.0.0, compiled by `cua compile` from discovery run discovery_2026-10-02T13-32-00Z_39dc
+# (model groq/openai/gpt-oss-120b). Behavior hash: sha256:3b554293169efdb258ea3ba9e752cbef22759c818d1ced9b91a41d3ca5dd3c91
+# Drafts are reviewed (see the matching .review.md), may be edited, then `cua approve`d.
+schema_version: 1
+id: open_sub_account
+version: 1.0.0
+content_hash: sha256:3b554293169efdb258ea3ba9e752cbef22759c818d1ced9b91a41d3ca5dd3c91
+status: approved
+recorded_by: discovery:groq/openai/gpt-oss-120b
+approved_by: utkarsh.mittal
+approved_at: '2026-10-02T16:23:52+00:00'
+provenance:
+  origin: discovery
+  recorded_from_run: discovery_2026-10-02T13-32-00Z_39dc
+  model: groq/openai/gpt-oss-120b
+  recorded_on_tenant: tenant-a
+  recorded_at: '2026-10-02T13:32:00.112937Z'
+  notes: 'Compiled from 1 discovery run(s): discovery_2026-10-02T13-32-00Z_39dc'
+app: {product: cu-core, versions: '>=4.6 <5'}
+
+description: Open a new sub-account for a member, funded from one of their existing accounts.
+risk: irreversible
+subject: inputs.member_id
+
+inputs:
+  type: object
+  required: [member_id, account_type, nickname, initial_deposit, funding_account]
+  properties:
+    member_id:
+      type: string
+      description: Five-digit member ID.
+      x-sensitivity: identifier
+      pattern: ^[0-9]{5}$
+    account_type:
+      type: string
+      description: Type of the new sub-account, as shown in the Account Type dropdown.
+      x-sensitivity: public
+      enum: [Savings, Money Market, Certificate]
+    nickname:
+      type: string
+      description: Nickname for the new account.
+      x-sensitivity: public
+      maxLength: 20
+    initial_deposit:
+      type: string
+      description: Opening deposit in USD, digits only (for example [REDACTED:financial]).
+      x-sensitivity: financial
+      pattern: ^[0-9]+([.][0-9]{2})?$
+    funding_account:
+      type: string
+      description: Account number the deposit is taken from.
+      x-sensitivity: identifier
+      pattern: ^[0-9]{4}-[0-9]{3}-[0-9]{4}$
+  additionalProperties: false
+outputs:
+  type: object
+  required: [new_account_number]
+  properties:
+    new_account_number:
+      type: string
+      description: Account number of the newly opened sub-account.
+      x-sensitivity: identifier
+  additionalProperties: false
+
+outcomes:
+- {code: MEMBER_NOT_FOUND, description: No member exists with this ID.}
+- {code: ACCESS_DENIED, description: The service account may not act on this member.}
+- {code: VALIDATION_ERROR, description: The application rejected the account details.}
+requires: [login@^1]
+
+steps:
+- id: open_search
+  action: navigate
+  description: Start at /search (already signed on)
+  frame:
+  - {name: main}
+  route: /search
+  postcondition: {title_contains: CU Core - Member Search}
+- id: enter_member_id
+  action: fill
+  target:
+    description: Member ID text box in 'Find Member'
+    frame:
+    - {name: main}
+    strategies:
+    - {by: label, text: Member ID, control: textbox}
+    - {by: attribute, attr: name, value: ctl00$main$txtMid, tag: input}
+    fingerprint:
+      tag: input
+      role: textbox
+      near_text: Member ID
+      row_context: ['Member ID:']
+      attributes: {name: ctl00$main$txtMid, type: text}
+      bbox: [325, 128, 93, 21]
+  value: '{{inputs.member_id}}'
+- id: click_search
+  action: click
+  target:
+    description: Search button in 'Find Member'
+    frame:
+    - {name: main}
+    strategies:
+    - {by: role, role: button, name: Search, near_text: Find Member}
+    - {by: attribute, attr: name, value: ctl00$main$btnSearch, tag: input}
+    fingerprint:
+      tag: input
+      role: button
+      name: Search
+      attributes: {name: ctl00$main$btnSearch, type: submit}
+      bbox: [325, 159, 58, 21]
+  wait:
+    until: {title_contains: CU Core - Member Detail}
+    timeout_ms: 8000
+- id: click_open_sub_account
+  action: click
+  target:
+    description: "'Open Sub-Account' link"
+    frame:
+    - {name: main}
+    strategies:
+    - {by: role, role: link, name: Open Sub-Account}
+    - {by: text, text: Open Sub-Account}
+    fingerprint:
+      tag: a
+      role: link
+      name: Open Sub-Account
+      bbox: [182, 396, 98, 14]
+  wait:
+    until: {title_contains: CU Core - Open Sub-Account}
+    timeout_ms: 8000
+- id: enter_nickname
+  action: fill
+  target:
+    description: Nickname text box in 'New Account Details'
+    frame:
+    - {name: main}
+    strategies:
+    - {by: label, text: Nickname, control: textbox}
+    - {by: attribute, attr: name, value: ctl00$main$txtNick, tag: input}
+    fingerprint:
+      tag: input
+      role: textbox
+      near_text: Nickname
+      row_context: ['Nickname:']
+      attributes: {name: ctl00$main$txtNick, type: text}
+      bbox: [325, 176, 160, 21]
+  value: '{{inputs.nickname}}'
+- id: enter_initial_deposit
+  action: fill
+  target:
+    description: Initial Deposit text box in 'New Account Details'
+    frame:
+    - {name: main}
+    strategies:
+    - {by: label, text: Initial Deposit, control: textbox}
+    - {by: attribute, attr: name, value: ctl00$main$txtDeposit, tag: input}
+    fingerprint:
+      tag: input
+      role: textbox
+      near_text: Initial Deposit
+      row_context: ['Initial Deposit:']
+      attributes: {name: ctl00$main$txtDeposit, type: text}
+      bbox: [325, 206, 93, 21]
+  value: '{{inputs.initial_deposit}}'
+- id: choose_funding_source
+  action: select
+  target:
+    description: Funding Source dropdown in 'New Account Details'
+    frame:
+    - {name: main}
+    strategies:
+    - {by: label, text: Funding Source, control: combobox}
+    - {by: attribute, attr: name, value: ctl00$main$ddlFunding, tag: select}
+    fingerprint:
+      tag: select
+      role: combobox
+      near_text: Funding Source
+      row_context: ['Funding Source:']
+      attributes: {name: ctl00$main$ddlFunding}
+      bbox: [325, 235, 252, 19]
+  option: '{{inputs.funding_account}}'
+- id: choose_account_type
+  action: select
+  target:
+    description: Account Type dropdown in 'New Account Details'
+    frame:
+    - {name: main}
+    strategies:
+    - {by: label, text: Account Type, control: combobox}
+    - {by: attribute, attr: name, value: ctl00$main$ddlType, tag: select}
+    fingerprint:
+      tag: select
+      role: combobox
+      near_text: Account Type
+      row_context: ['Account Type:', -- Select -- Savings Money Market Certif]
+      attributes: {name: ctl00$main$ddlType}
+      bbox: [325, 149, 106, 19]
+  option: '{{inputs.account_type}}'
+- id: click_continue
+  action: click
+  target:
+    description: Continue button in 'New Account Details'
+    frame:
+    - {name: main}
+    strategies:
+    - {by: role, role: button, name: Continue}
+    - {by: attribute, attr: name, value: ctl00$main$btnContinue, tag: input}
+    fingerprint:
+      tag: input
+      role: button
+      name: Continue
+      row_context: [Cancel]
+      attributes: {name: ctl00$main$btnContinue, type: submit}
+      bbox: [325, 264, 69, 21]
+  wait:
+    until: {title_contains: CU Core - Review New Account}
+    timeout_ms: 8000
+  risk: reversible_write
+- id: click_confirm
+  action: click
+  target:
+    description: Confirm button
+    frame:
+    - {name: main}
+    strategies:
+    - {by: role, role: button, name: Confirm}
+    - {by: attribute, attr: name, value: ctl00$main$btnConfirm, tag: input}
+    fingerprint:
+      tag: input
+      role: button
+      name: Confirm
+      attributes: {name: ctl00$main$btnConfirm, type: submit}
+      bbox: [182, 294, 62, 21]
+  wait:
+    until: {title_contains: CU Core - Account Opened}
+    timeout_ms: 8000
+  risk: irreversible
+  requires_confirmation: true
+- id: read_new_account_number
+  action: extract
+  target:
+    description: value next to 'New Account Number'
+    frame:
+    - {name: main}
+    strategies:
+    - {by: label, text: New Account Number, control: value_cell}
+    fingerprint:
+      tag: td
+      role: cell
+      near_text: New Account Number
+      row_context: ['New Account Number:']
+      bbox: [371, 137, 269, 27]
+  output: new_account_number
+  parse: text
+
+success:
+  all_of:
+  - {title_contains: CU Core - Account Opened}
+  - {output_present: new_account_number}

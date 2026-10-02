@@ -1,0 +1,13 @@
+{
+  "run_id": "replay_2026-10-02T00-38-43Z_edd5",
+  "capability": "lookup_savings_balance",
+  "version": "1.0.1",
+  "tenant": "tenant-a",
+  "started_at": "2026-10-02T00:38:43.124520Z",
+  "duration_ms": 1516,
+  "llm_calls": 0,
+  "kind": "business_outcome",
+  "code": "MEMBER_NOT_FOUND",
+  "detail": "No member exists with this ID. (page says: No member found for the ID entered.)",
+  "at_step": "click_search"
+}

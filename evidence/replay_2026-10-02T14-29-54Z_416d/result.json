@@ -1,0 +1,28 @@
+{
+  "run_id": "replay_2026-10-02T14-29-54Z_416d",
+  "capability": "lookup_savings_balance",
+  "version": "1.0.1",
+  "tenant": "tenant-b",
+  "started_at": "2026-10-02T14:29:54.441161Z",
+  "duration_ms": 17633,
+  "llm_calls": 0,
+  "kind": "failure",
+  "code": "UNEXPECTED_STATE",
+  "at_step": "click_search",
+  "expected": "{\"any_of\":[{\"title_contains\":\"CU Core - Member Detail\"},{\"detector\":\"member_not_found\"},{\"detector\":\"access_denied\"},{\"detector\":\"no_savings_account\"}]}",
+  "observed": "route=/search title='CU Core - Member Search'; page says: You must acknowledge the member privacy notice before searching.",
+  "retryable": false,
+  "side_effects": "none",
+  "evidence": [
+    "screenshots/01-failure.png",
+    "page_at_stop.txt"
+  ],
+  "recoveries": [
+    {
+      "detector": "slow_page",
+      "action": "extended_wait",
+      "at_step": "click_search",
+      "attempt": 1
+    }
+  ]
+}
